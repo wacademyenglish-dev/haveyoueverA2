@@ -1,0 +1,1750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WOLFFY: Have You Ever Seen The Rain</title>
+    <!-- Fonts: Retro & Mono for analog feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Oswald:wght@400;600;700&family=Playfair+Display:wght@700;900&family=Outfit:wght@400;500;600;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        amp: {
+                            dark: '#1a1a1a',    /* Amp Tolex */
+                            panel: '#2d2d2d',   /* Metallic Panel */
+                            grill: '#0f0f0f',   /* Speaker Grill */
+                        },
+                        vintage: {
+                            orange: '#f97316',  /* CCR Orange */
+                            paper: '#fdf6e3',   /* Aged paper */
+                            ink: '#2c1e16',     /* Dark brown ink */
+                            blue: '#0ea5e9',    /* Rain blue */
+                        }
+                    },
+                    fontFamily: {
+                        oswald: ['Oswald', 'sans-serif'],
+                        outfit: ['Outfit', 'sans-serif'],
+                        mono: ['"Courier Prime"', 'monospace'],
+                        playfair: ['"Playfair Display"', 'serif'],
+                    },
+                    boxShadow: {
+                        'analog': 'inset 0 2px 4px rgba(255,255,255,0.1), 0 4px 8px rgba(0,0,0,0.5)',
+                        'knob': '0 4px 6px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.2)',
+                        'paper': 'inset 0 0 40px rgba(0,0,0,0.1), 0 10px 20px rgba(0,0,0,0.3)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Base & Resets */
+        body {
+            background-color: #111;
+            /* Subtle leather/tolex texture pattern */
+            background-image: radial-gradient(#222 1px, transparent 1px);
+            background-size: 4px 4px;
+            color: #fff;
+            overflow: hidden;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+        }
+        h1, h2, h3, .title-font { font-family: 'Playfair Display', serif; }
+
+        /* --- RECORD PLAYER ANIMATIONS --- */
+        .vinyl-spin {
+            animation: spin 120s linear infinite; 
+        }
+        .vinyl-paused {
+            animation-play-state: paused;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .tonearm {
+            transform-origin: top right;
+            transition: transform 0.5s ease-in-out;
+            transform: rotate(-15deg); /* Default resting */
+        }
+        .tonearm.playing {
+            transform: rotate(15deg); /* Playing position */
+        }
+
+        /* --- ANALOG SCREEN --- */
+        .analog-screen {
+            background-color: #fdf6e3;
+            color: #2c1e16;
+            background-image: radial-gradient(rgba(0,0,0,0.05) 1px, transparent 1px);
+            background-size: 10px 10px;
+            position: relative;
+        }
+        .analog-screen::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.2) 0%, rgba(0,0,0,0.05) 100%);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* --- SLIDE NAVIGATION (SAFE EXPANDABLE HEIGHT FIX) --- */
+        .slide {
+            display: none;
+            opacity: 0;
+            width: 100%; 
+            min-height: 100%;
+            flex-direction: column; 
+            align-items: center;
+            padding: 40px 0;
+        }
+        .slide.active { 
+            display: flex; 
+            animation: fadeIn 0.4s ease-out forwards; 
+        }
+        /* Auto margin trick guarantees vertical centering without clipping top content */
+        .slide::before, .slide::after {
+            content: '';
+            margin: auto;
+        }
+        .slide > * {
+            flex-shrink: 0;
+            max-width: 100%;
+            z-index: 20;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        /* --- ANALOG BUTTONS & SWITCHES --- */
+        .chunky-btn {
+            background: linear-gradient(to bottom, #4a4a4a, #2d2d2d);
+            border: 2px solid #1a1a1a;
+            border-top-color: #666;
+            transition: all 0.1s;
+        }
+        .chunky-btn:active {
+            background: #2d2d2d;
+            border-top-color: #1a1a1a;
+            border-bottom-color: #666;
+            transform: translateY(2px);
+        }
+        
+        .toggle-switch {
+            width: 60px; height: 100px;
+            background: #111; border-radius: 30px;
+            position: relative; cursor: pointer;
+            box-shadow: inset 0 10px 20px rgba(0,0,0,0.8);
+            border: 2px solid #333;
+        }
+        .toggle-knob {
+            width: 44px; height: 44px;
+            background: linear-gradient(to bottom, #fdf6e3, #d1c9b4);
+            border-radius: 50%;
+            position: absolute; left: 6px; top: 6px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5), inset 0 -4px 4px rgba(0,0,0,0.2);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .toggle-knob::after {
+            content: ''; width: 20px; height: 20px;
+            border-radius: 50%; background: linear-gradient(to bottom, #d1c9b4, #fdf6e3);
+        }
+        .toggle-switch.active .toggle-knob {
+            transform: translateY(40px);
+            background: linear-gradient(to bottom, #f97316, #c2410c);
+        }
+        .toggle-switch.active .toggle-knob::after {
+            background: linear-gradient(to bottom, #c2410c, #f97316);
+        }
+
+        /* --- TAPE SPLICER (SENTENCE BUILDER) --- */
+        .tape-blank {
+            display: inline-block; min-width: 80px; height: 36px;
+            border-bottom: 3px solid #2c1e16; margin: 0 8px;
+            vertical-align: middle; text-align: center;
+            font-family: 'Courier Prime', monospace; font-weight: bold;
+            color: #f97316;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        .tape-blank.filled { border-color: #f97316; }
+        .tape-piece {
+            background: #2c1e16; color: #fdf6e3;
+            font-family: 'Courier Prime', monospace;
+            padding: 8px 16px; position: relative; cursor: pointer;
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.3);
+            transition: transform 0.1s;
+        }
+        .tape-piece::before, .tape-piece::after {
+            content: ''; position: absolute; top: 0; bottom: 0; width: 8px;
+            background-image: radial-gradient(circle, transparent 2px, #2c1e16 3px);
+            background-size: 8px 8px;
+        }
+        .tape-piece::before { left: -4px; }
+        .tape-piece::after { right: -4px; }
+        .tape-piece:hover { transform: translateY(-2px) scale(1.05); background: #f97316; color: #2c1e16; }
+        .tape-piece.used { opacity: 0; pointer-events: none; }
+
+        /* Polaroid Hover */
+        .polaroid { transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); background: white; padding: 12px; padding-bottom: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); border: 1px solid #ddd; cursor: pointer; }
+        .polaroid:hover { transform: scale(1.05) rotate(-2deg); z-index: 10; }
+
+        /* Interactive Buttons */
+        .mcq-btn { transition: all 0.2s ease; }
+        .mcq-btn:hover { border-color: #f97316; background: rgba(255,255,255,0.8); }
+
+        /* Flip Cards (Roleplay/Discussion) */
+        .flip-card { perspective: 1000px; cursor: pointer; height: 260px; }
+        .flip-card-inner {
+            position: relative; width: 100%; height: 100%; text-align: center;
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-style: preserve-3d;
+        }
+        .flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
+        .flip-card-front, .flip-card-back {
+            position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+            border-radius: 16px; display: flex; align-items: center; justify-content: center; padding: 2rem;
+            flex-direction: column;
+        }
+        .flip-card-front { background: #fdf6e3; border: 2px solid rgba(44, 30, 22, 0.1); }
+        .flip-card-back { background: #f97316; color: #fff; transform: rotateY(180deg); }
+
+        /* Memory Game Cards (With Vintage Colors & Safe State Logic) */
+        .memory-card { height: 120px; perspective: 1000px; cursor: pointer; }
+        .memory-card-inner {
+            position: relative; width: 100%; height: 100%; text-align: center;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d;
+            pointer-events: none;
+        }
+        .memory-card.flipped .memory-card-inner { transform: rotateY(180deg); }
+        
+        /* Matched State explicitly handled via CSS! */
+        .memory-card.matched .memory-card-back { 
+            background: #f97316 !important; 
+            color: black !important; 
+            border-color: #f97316 !important; 
+        }
+        
+        .memory-card-front, .memory-card-back {
+            position: absolute; width: 100%; height: 100%; 
+            backface-visibility: hidden; -webkit-backface-visibility: hidden;
+            border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; font-weight: bold; border: 2px solid rgba(44, 30, 22, 0.2);
+        }
+        .memory-card-front { background: #e5ddc5; }
+        .memory-card-front::after { content: '?'; color: #2c1e16; font-size: 2.5rem; font-family: 'Oswald'; opacity: 0.3;}
+        .memory-card-back { background: #2c1e16; color: white; transform: rotateY(180deg); transition: background-color 0.3s; }
+
+        /* Timeline Order Game */
+        .timeline-item { background: white; border: 2px solid rgba(44,30,22,0.1); color: #2c1e16; transition: all 0.3s; cursor: pointer; }
+        .timeline-item.selected { background: rgba(249,115,22,0.1); border-color: #f97316; transform: scale(1.02); }
+        .timeline-number { display: none; }
+        .timeline-item.selected .timeline-number { display: flex; }
+
+        /* Rhyme Matcher */
+        .rhyme-btn { transition: all 0.2s; background: white; border: 2px solid rgba(44,30,22,0.1); color: #2c1e16; }
+        .rhyme-btn.selected { border-color: #f97316; background-color: rgba(249, 115, 22, 0.1); }
+        .rhyme-btn.matched { background-color: rgba(249, 115, 22, 0.2); border-color: #f97316; color: #f97316; pointer-events: none; opacity: 0.7; }
+
+        .rapid-card { transition: all 0.3s; }
+        .rapid-card.hidden-card { display: none; opacity: 0; }
+
+        /* Highlight text inside analog screen */
+        .lyric-highlight { color: #f97316; font-weight: bold; cursor: pointer; position: relative;}
+        .lyric-highlight::after {
+            content: ''; position: absolute; width: 100%; height: 2px;
+            bottom: 2px; left: 0; background-color: #f97316;
+            transform: scaleX(0); transform-origin: bottom right; transition: transform 0.3s ease-out;
+        }
+        .lyric-highlight:hover { color: #c2410c; }
+        .lyric-highlight:hover::after { transform: scaleX(1); transform-origin: bottom left; }
+
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(3px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-5px, 0, 0); }
+            40%, 60% { transform: translate3d(5px, 0, 0); }
+        }
+
+        .confetti { position: absolute; width: 12px; height: 12px; background-color: #f97316; opacity: 0; z-index: 100; }
+        
+        /* Grammar Switcher Animation */
+        .grammar-switch-container { position: relative; width: 100%; min-height: 240px; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+        .grammar-state { position: absolute; left: 0; width: 100%; transition: all 0.4s ease-in-out; opacity: 0; visibility: hidden; transform: translateY(20px); z-index: 1; pointer-events: none; }
+        .grammar-state.active { opacity: 1; visibility: visible; transform: translateY(0); z-index: 10; pointer-events: auto; }
+
+        /* Timelines lines for Grammar UI */
+        .time-line-graph { position: relative; width: 100%; height: 4px; background: #cbd5e1; margin: 20px 0; border-radius: 2px; }
+        .time-point { position: absolute; top: -6px; width: 16px; height: 16px; border-radius: 50%; }
+        .time-label { position: absolute; top: 15px; font-size: 14px; font-weight: bold; transform: translateX(-50%); }
+
+        /* Lyric Insights Modal (The WOW factor) */
+        .insight-option-btn { transition: all 0.2s ease; border: 2px solid transparent; }
+        .insight-option-btn:hover { border-color: #f97316; background-color: rgba(249, 115, 22, 0.1); }
+        .insight-option-btn.selected { border-color: #f97316; background-color: #f97316; color: #121212; font-weight: bold; }
+
+        /* Hide scrollbar */
+        .no-scroll::-webkit-scrollbar { display: none; }
+        .no-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="flex flex-col h-screen w-screen overflow-hidden p-2 lg:p-6 gap-0 bg-[#111] relative">
+
+    <div class="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] pointer-events-none z-0" style="background: radial-gradient(circle at 20% 30%, rgba(249, 115, 22, 0.08) 0%, rgba(5, 5, 5, 1) 40%), radial-gradient(circle at 80% 70%, rgba(14, 165, 233, 0.08) 0%, rgba(5, 5, 5, 1) 40%); animation: pulseBg 20s ease-in-out infinite alternate;"></div>
+
+    <!-- ================= MAIN PANEL (FULL WIDTH) ================= -->
+    <main class="flex-1 flex flex-col bg-amp-panel rounded-3xl border-[4px] lg:border-[6px] border-[#0a0a0a] shadow-[0_15px_50px_rgba(0,0,0,0.8)] relative overflow-hidden z-10 w-full max-w-[1400px] mx-auto">
+        
+        <!-- Hardware Screws -->
+        <div class="absolute top-3 left-4 w-3 h-3 rounded-full bg-gray-600 border border-gray-800 shadow-inner z-20"></div>
+        <div class="absolute top-3 right-4 w-3 h-3 rounded-full bg-gray-600 border border-gray-800 shadow-inner z-20"></div>
+        <div class="absolute bottom-3 left-4 w-3 h-3 rounded-full bg-gray-600 border border-gray-800 shadow-inner z-20"></div>
+        <div class="absolute bottom-3 right-4 w-3 h-3 rounded-full bg-gray-600 border border-gray-800 shadow-inner z-20"></div>
+
+        <!-- THE ANALOG SCREEN -->
+        <div class="flex-1 m-4 lg:m-8 rounded-2xl analog-screen shadow-paper p-6 lg:p-12 overflow-y-auto no-scroll relative flex flex-col" id="slides-container">
+            
+            <!-- WATERMARK (Appears on every slide) -->
+            <div class="absolute bottom-6 right-8 z-0 text-vintage-ink/10 font-black font-oswald text-5xl md:text-7xl tracking-[0.3em] pointer-events-none select-none uppercase transform -rotate-2">
+                WOLFFY
+            </div>
+
+            <!-- SLIDE 01: LINER NOTES -->
+            <section class="slide active" id="slide-0">
+                <div class="flex justify-between items-start mb-8 w-full">
+                    <div>
+                        <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-2">Liner Notes • Side A</h2>
+                        <h1 class="text-5xl lg:text-7xl font-black font-oswald leading-none text-vintage-ink tracking-tight">Have You Ever<br><span class="text-vintage-blue">Seen The Rain</span></h1>
+                    </div>
+                    <div class="w-16 h-16 border-4 border-vintage-ink rounded-full flex items-center justify-center font-oswald text-2xl font-bold text-vintage-ink transform rotate-12">CCR</div>
+                </div>
+                
+                <div class="border-t-2 border-b-2 border-vintage-ink/20 py-8 my-6 w-full text-center md:text-left">
+                    <p class="font-mono text-xl md:text-2xl leading-relaxed text-vintage-ink/80 font-bold mb-4">> TARGET: A2 (Pre-Intermediate)</p>
+                    <p class="font-mono text-xl md:text-2xl leading-relaxed text-vintage-ink/80 font-bold mb-4">> GRAMMAR: Present Perfect (Life Experiences)</p>
+                    <p class="font-mono text-xl md:text-2xl leading-relaxed text-vintage-ink/80 font-bold">> ESTÉTICA: Vintage 70s Studio</p>
+                </div>
+
+                <div class="bg-vintage-orange/10 p-6 rounded-xl border border-vintage-orange/30 w-full text-center mt-6 z-20 relative">
+                    <p class="font-mono text-vintage-ink font-bold text-xl">INSTRUCTIONS:</p>
+                    <p class="font-outfit text-lg md:text-xl text-vintage-ink/80 mt-2 font-medium">Welcome to the Analog Studio. The vintage console is at the bottom. Try clicking the highlighted words in the Lyrics View (Tracks 11 and 12) for the new Interactive Insights!</p>
+                </div>
+            </section>
+
+            <!-- SLIDE 02: COVER ART -->
+            <section class="slide" id="slide-1">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 02 • The Record</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-8 relative z-20">Pendulum</h1>
+                <div class="w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl relative border-4 border-vintage-ink/20 bg-black flex items-center justify-center h-auto z-20">
+                    <img src="https://m.media-amazon.com/images/I/61hc8z07tNL._UF1000,1000_QL80_.jpg" alt="Pendulum Cover" class="w-full h-auto max-h-[400px] object-contain">
+                </div>
+            </section>
+
+            <!-- SLIDE 03: VIBE CHECK -->
+            <section class="slide" id="slide-2">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 03 • Warm Up</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-8 relative z-20">Vibe Check</h1>
+                <p class="text-2xl font-outfit text-vintage-ink/90 mb-8 font-medium relative text-center z-20">How do you usually feel when it's raining heavily outside?</p>
+                
+                <div class="space-y-4 w-full max-w-4xl options-group relative z-20">
+                    <button class="w-full text-left bg-white/50 border-2 border-vintage-ink/20 p-5 rounded-xl text-xl font-outfit text-vintage-ink font-medium hover:border-vintage-orange transition-colors mcq-btn" onclick="selectMCQ(this, 1, 'hub-track2')">☕ I feel cozy. I want to drink coffee and watch a movie.</button>
+                    <button class="w-full text-left bg-white/50 border-2 border-vintage-ink/20 p-5 rounded-xl text-xl font-outfit text-vintage-ink font-medium hover:border-vintage-orange transition-colors mcq-btn" onclick="selectMCQ(this, 1, 'hub-track2')">😴 I feel tired and lazy. I just want to sleep.</button>
+                    <button class="w-full text-left bg-white/50 border-2 border-vintage-ink/20 p-5 rounded-xl text-xl font-outfit text-vintage-ink font-medium hover:border-vintage-orange transition-colors mcq-btn" onclick="selectMCQ(this, 1, 'hub-track2')">😔 I feel a little sad or melancholic.</button>
+                </div>
+                <div class="hidden mt-6 p-6 border-l-4 border-vintage-orange bg-vintage-orange/10 rounded-r-xl relative w-full max-w-4xl text-left z-20" id="hub-track2">
+                    <p class="text-vintage-orange font-mono text-sm mb-2 uppercase tracking-widest">Speaking Starter</p>
+                    <p class="text-vintage-ink text-xl italic">"When it's raining, I usually feel..."</p>
+                </div>
+            </section>
+
+            <!-- SLIDE 04: TRIVIA PT 1 -->
+            <section class="slide" id="slide-3">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 04 • Trivia</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-8 relative z-20">Who are they?</h1>
+                <p class="text-2xl font-outfit text-vintage-ink/90 mb-8 font-medium relative text-center z-20">Creedence Clearwater Revival (CCR) was a massive band in the late 1960s. What style of music did they play?</p>
+                <div class="space-y-4 w-full max-w-4xl options-group relative z-20">
+                    <button class="w-full text-left bg-white/50 border-2 border-vintage-ink/20 p-5 rounded-xl text-xl font-outfit text-vintage-ink font-medium hover:border-vintage-orange transition-colors mcq-btn" onclick="selectMCQ(this, 'wrong')">A) Electronic Disco</button>
+                    <button class="w-full text-left bg-white/50 border-2 border-vintage-ink/20 p-5 rounded-xl text-xl font-outfit text-vintage-ink font-medium hover:border-vintage-orange transition-colors mcq-btn" onclick="selectMCQ(this, 'correct', 'hub-track3')">B) Roots Rock / Swamp Rock</button>
+                    <button class="w-full text-left bg-white/50 border-2 border-vintage-ink/20 p-5 rounded-xl text-xl font-outfit text-vintage-ink font-medium hover:border-vintage-orange transition-colors mcq-btn" onclick="selectMCQ(this, 'wrong')">C) Classical Music</button>
+                </div>
+                <div class="hidden mt-6 p-4 border-l-4 border-vintage-orange bg-vintage-orange/10 font-mono text-vintage-ink font-bold relative w-full max-w-4xl text-center z-20" id="hub-track3">
+                    > CORRECT. They played a very acoustic, southern, "roots" rock style.
+                </div>
+            </section>
+
+            <!-- SLIDE 05: TRIVIA PT 2 -->
+            <section class="slide" id="slide-4">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 05 • Trivia</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-8 relative text-center z-20">The Weather Report</h1>
+                <p class="text-2xl font-outfit text-vintage-ink/90 mb-8 font-medium relative text-center z-20">The singer wrote about <strong class="text-vintage-blue">"rain coming down on a sunny day."</strong> What was the song really about?</p>
+                <div class="space-y-4 w-full max-w-4xl options-group relative z-20">
+                    <button class="w-full text-left bg-white/50 border-2 border-vintage-ink/20 p-5 rounded-xl text-xl font-outfit text-vintage-ink font-medium hover:border-vintage-orange transition-colors mcq-btn" onclick="selectMCQ(this, 'wrong')">A) A crazy storm in California.</button>
+                    <button class="w-full text-left bg-white/50 border-2 border-vintage-ink/20 p-5 rounded-xl text-xl font-outfit text-vintage-ink font-medium hover:border-vintage-orange transition-colors mcq-btn" onclick="selectMCQ(this, 'correct', 'hub-track4')">B) The band fighting and breaking up during their biggest success.</button>
+                    <button class="w-full text-left bg-white/50 border-2 border-vintage-ink/20 p-5 rounded-xl text-xl font-outfit text-vintage-ink font-medium hover:border-vintage-orange transition-colors mcq-btn" onclick="selectMCQ(this, 'wrong')">C) A normal weather forecast.</button>
+                </div>
+                <div class="hidden mt-6 p-4 border-l-4 border-vintage-orange bg-vintage-orange/10 font-mono text-vintage-ink font-bold relative w-full max-w-4xl text-center z-20" id="hub-track4">
+                    > CORRECT. The "sunny day" was their fame. The "rain" was their internal sadness and fights.
+                </div>
+            </section>
+
+            <!-- SLIDE 06: POLAROIDS (VOCAB) -->
+            <section class="slide" id="slide-5">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 06 • Vocabulary</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-8 relative z-20">The Photo Album</h1>
+                <p class="text-xl font-outfit text-vintage-ink/80 mb-8 relative z-20">Click the polaroids to reveal the vocabulary.</p>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6 w-full max-w-5xl mx-auto relative z-20" id="polaroid-grid">
+                    <div class="polaroid bg-white border border-gray-200" onclick="flipPolaroid(this, 'Calm', 'Peaceful and without worry.', 'Are you a calm or stressed person?')">
+                        <div class="bg-gray-200 h-28 lg:h-32 w-full flex items-center justify-center mb-4 border border-gray-300"><span class="text-5xl">😌</span></div>
+                        <p class="font-mono font-bold text-center text-vintage-ink word-label text-xl">???</p>
+                    </div>
+                    <div class="polaroid bg-white border border-gray-200" onclick="flipPolaroid(this, 'Storm', 'Very bad weather with heavy rain and wind.', 'What is the worst storm you have ever seen?')">
+                        <div class="bg-gray-200 h-28 lg:h-32 w-full flex items-center justify-center mb-4 border border-gray-300"><span class="text-5xl">⛈️</span></div>
+                        <p class="font-mono font-bold text-center text-vintage-ink word-label text-xl">???</p>
+                    </div>
+                    <div class="polaroid bg-white border border-gray-200" onclick="flipPolaroid(this, 'Shining', 'Giving out bright light.', 'Do you prefer a shining sunny day or a cloudy day?')">
+                        <div class="bg-gray-200 h-28 lg:h-32 w-full flex items-center justify-center mb-4 border border-gray-300"><span class="text-5xl">☀️</span></div>
+                        <p class="font-mono font-bold text-center text-vintage-ink word-label text-xl">???</p>
+                    </div>
+                    <div class="polaroid bg-white border border-gray-200" onclick="flipPolaroid(this, 'Ever', 'At any time in your life.', 'Have you EVER traveled alone?')">
+                        <div class="bg-gray-200 h-28 lg:h-32 w-full flex items-center justify-center mb-4 border border-gray-300"><span class="text-5xl">🌎</span></div>
+                        <p class="font-mono font-bold text-center text-vintage-ink word-label text-xl">???</p>
+                    </div>
+                </div>
+
+                <div id="polaroid-hub" class="hidden mt-8 p-6 border-4 border-vintage-ink/10 rounded-xl bg-white/70 relative w-full max-w-4xl mx-auto text-left shadow-sm z-20">
+                    <h3 id="p-title" class="text-3xl md:text-4xl font-black font-oswald text-vintage-orange mb-2">Word</h3>
+                    <p id="p-def" class="text-vintage-ink/80 text-xl mb-4 font-outfit font-medium">Definition</p>
+                    <p class="text-vintage-ink text-2xl font-bold font-mono">> <span id="p-q" class="text-vintage-blue">Question</span></p>
+                </div>
+            </section>
+
+            <!-- SLIDE 07: PRE-LISTENING -->
+            <section class="slide" id="slide-6">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 07 • Discussion</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-8 relative z-20">The Calm Before...</h1>
+                <div class="bg-white/50 p-10 rounded-2xl border-2 border-vintage-ink/20 text-center shadow-sm relative w-full max-w-4xl mx-auto z-20">
+                    <p class="text-3xl font-bold leading-relaxed text-vintage-ink mb-6">The singer says there is always a <strong class="text-vintage-blue">"calm before the storm"</strong>.</p>
+                    <p class="text-xl text-vintage-ink/70">Do you think bad things usually happen right after a period of perfect peace? Can things be "too perfect"?</p>
+                </div>
+            </section>
+
+            <!-- SLIDE 08: THE BROADCAST (VIDEO) -->
+            <section class="slide h-full" id="slide-7">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 08 • Playing</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-6 relative z-20">Live in 1970</h1>
+                <div class="w-full max-w-5xl mx-auto rounded-2xl overflow-hidden border-8 border-[#2c1e16] bg-black shadow-2xl relative min-h-[350px] z-20">
+                    <iframe class="absolute inset-0 w-full h-full" src="https://www.youtube.com/embed/u1V8YRJnr4Q?rel=0" frameborder="0" allowfullscreen></iframe>
+                </div>
+                <div class="mt-6 p-6 border-l-4 border-vintage-blue bg-vintage-blue/10 font-mono text-vintage-ink w-full max-w-5xl mx-auto relative z-20">
+                    <p class="font-bold text-xl">> FOCUS:</p>
+                    <p class="font-outfit text-xl mt-1">Listen to the rhythm. Does it sound happy or sad to you?</p>
+                </div>
+            </section>
+
+            <!-- SLIDE 09: FIRST IMPRESSIONS -->
+            <section class="slide" id="slide-8">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 09 • Review</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-8 relative z-20">Impressions</h1>
+                <div class="bg-white/50 p-10 rounded-2xl border-2 border-vintage-ink/20 text-center shadow-sm w-full max-w-4xl mx-auto relative z-20">
+                    <p class="text-3xl font-bold leading-relaxed text-vintage-ink mb-8">The rhythm of the song is very energetic and upbeat, but the lyrics are sad.</p>
+                    <p class="text-2xl text-vintage-ink/80">Why do you think they made a "happy-sounding" song to talk about their band breaking up?</p>
+                </div>
+                <div class="mt-6 p-6 border-l-4 border-vintage-orange bg-vintage-orange/10 rounded-r-xl w-full max-w-4xl mx-auto relative text-left z-20">
+                    <p class="text-vintage-orange font-mono text-sm mb-2 uppercase tracking-widest">Speaking Starter</p>
+                    <p class="text-vintage-ink text-xl italic">"I think they made a happy-sounding song because..."</p>
+                </div>
+            </section>
+
+            <!-- SLIDE 10: LISTENING CHECK -->
+            <section class="slide" id="slide-9">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 10 • Quiz</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-8 relative z-20">Listening Check</h1>
+                <p class="text-2xl font-outfit text-vintage-ink/90 mb-8 font-medium relative text-center z-20">In the famous chorus, what does the singer want to know?</p>
+                <div class="space-y-4 w-full max-w-4xl mx-auto options-group relative z-20">
+                    <button class="w-full text-left bg-white/50 border-2 border-vintage-ink/20 p-5 rounded-xl text-xl font-outfit text-vintage-ink font-medium hover:border-vintage-orange transition-colors mcq-btn" onclick="selectMCQ(this, 'wrong')">A) If you brought an umbrella.</button>
+                    <button class="w-full text-left bg-white/50 border-2 border-vintage-ink/20 p-5 rounded-xl text-xl font-outfit text-vintage-ink font-medium hover:border-vintage-orange transition-colors mcq-btn" onclick="selectMCQ(this, 'correct', 'hub-track9')">B) If you have ever seen the rain coming down on a sunny day.</button>
+                    <button class="w-full text-left bg-white/50 border-2 border-vintage-ink/20 p-5 rounded-xl text-xl font-outfit text-vintage-ink font-medium hover:border-vintage-orange transition-colors mcq-btn" onclick="selectMCQ(this, 'wrong')">C) If the sun will shine tomorrow.</button>
+                </div>
+                <div class="hidden mt-6 p-4 border-l-4 border-vintage-orange bg-vintage-orange/10 font-mono text-vintage-ink font-bold w-full max-w-4xl mx-auto relative text-center text-xl z-20" id="hub-track9">
+                    > "I want to know, have you ever seen the rain..."
+                </div>
+            </section>
+
+            <!-- SLIDE 11: THE LYRICS VIEW (VERSE) -->
+            <section class="slide" id="slide-10">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 11 • Reading</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-8 relative z-20">The Lyrics View</h1>
+                <p class="text-xl font-outfit text-vintage-ink/80 mb-8 relative z-20">Click on the <span class="text-vintage-orange font-bold">orange words</span> to open the Interactive Insights!</p>
+                <div class="w-full max-w-4xl mx-auto flex-1 bg-white/40 border-2 border-vintage-ink/10 rounded-2xl p-6 lg:p-10 overflow-y-auto relative text-center md:text-left shadow-inner z-20">
+                    <div class="space-y-4 text-2xl md:text-3xl lg:text-4xl font-black font-oswald text-vintage-ink/80 leading-tight">
+                        <p class="text-vintage-ink">Someone told me long <span class="lyric-highlight" onclick="openLyricInsight('ago')">ago</span></p>
+                        <p>There's a <span class="lyric-highlight" onclick="openLyricInsight('calm-storm')">calm before the storm</span></p>
+                        <p class="text-vintage-ink">I know, it's been comin' for some time</p>
+                        <p>When it's over, so they say</p>
+                        <p class="text-white bg-vintage-ink/10 inline-block px-2 rounded">It'll rain a <span class="lyric-highlight" onclick="openLyricInsight('sunny-day')">sunny day</span></p>
+                        <br>
+                        <p class="text-vintage-ink">I know, <span class="lyric-highlight" onclick="openLyricInsight('shining-water')">shining down like water</span></p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 12: THE LYRICS CHORUS -->
+            <section class="slide" id="slide-11">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 12 • Reading</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-8 relative z-20">The Chorus</h1>
+                <div class="w-full max-w-4xl mx-auto flex-1 bg-white/40 border-2 border-vintage-ink/10 rounded-2xl p-6 lg:p-10 overflow-y-auto flex items-center justify-center relative shadow-inner z-20">
+                    <div class="space-y-6 text-3xl md:text-4xl lg:text-5xl font-black font-oswald text-vintage-ink/80 text-center w-full leading-tight">
+                        <p class="text-vintage-ink">I want to know,</p>
+                        <p><span class="lyric-highlight" onclick="openLyricInsight('have-ever')">Have you ever</span> seen the rain?</p>
+                        <p class="text-vintage-ink">I want to know,</p>
+                        <p>Have you ever seen the rain</p>
+                        <p class="text-vintage-ink">Comin' down on a sunny day?</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 13: GRAMMAR INTRO -->
+            <section class="slide" id="slide-12">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 13 • Grammar</h2>
+                <h1 class="text-4xl lg:text-5xl font-black font-oswald text-vintage-ink mb-6 relative z-20">Present Perfect</h1>
+                <p class="text-xl font-outfit text-vintage-ink/90 mb-6 leading-relaxed text-center max-w-4xl relative mx-auto z-20">
+                    We use the <strong class="text-vintage-orange font-bold text-2xl">Present Perfect</strong> to talk about <strong class="underline">Life Experiences</strong>. We don't care *when* it happened, we just want to know *if* you did it in your life.
+                </p>
+                
+                <div class="flex flex-col gap-6 w-full max-w-4xl mx-auto relative z-20">
+                    <div class="bg-white/80 p-6 rounded-xl border-l-8 border-vintage-orange shadow-sm flex flex-col justify-center">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-bold text-vintage-orange text-xl">Birth</span>
+                            <span class="font-bold text-vintage-orange text-lg md:text-2xl text-center leading-snug font-oswald tracking-wide">"Have you <strong class="underline">ever</strong> seen the rain?"</span>
+                            <span class="font-bold text-vintage-orange text-xl">NOW</span>
+                        </div>
+                        <div class="time-line-graph bg-gray-300 w-full">
+                            <div class="time-point bg-vintage-orange left-0"></div>
+                            <div class="time-point bg-vintage-orange right-0"></div>
+                            <div class="absolute h-full w-full bg-vintage-orange/30"></div>
+                        </div>
+                        <p class="text-vintage-ink/80 text-sm md:text-base text-center italic mt-2">"Ever" means anytime during this entire continuous period.</p>
+                    </div>
+
+                    <div class="bg-white/80 p-6 rounded-xl border-l-8 border-[#10b981] shadow-sm flex flex-col justify-center">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-bold text-vintage-ink/50 text-xl">Past</span>
+                            <span class="font-bold text-[#10b981] text-lg md:text-2xl text-center leading-snug font-oswald tracking-wide">"Did you see the rain <strong class="underline">yesterday</strong>?"</span>
+                            <span class="font-bold text-vintage-ink/50 text-xl">NOW</span>
+                        </div>
+                        <div class="time-line-graph bg-gray-300 w-full">
+                            <div class="time-point bg-vintage-ink/30 left-0"></div>
+                            <div class="time-point bg-vintage-ink/30 right-0"></div>
+                            <div class="time-point bg-[#10b981] left-1/2">
+                                <span class="time-label text-[#10b981] -top-6">Yesterday</span>
+                            </div>
+                        </div>
+                        <p class="text-vintage-ink/80 text-sm md:text-base text-center italic mt-2">Simple Past focuses on a finished, specific dot in the timeline.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 14: THE 3RD COLUMN -->
+            <section class="slide" id="slide-13">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 14 • Grammar Structure</h2>
+                <h1 class="text-4xl lg:text-5xl font-black font-oswald text-vintage-ink mb-6 relative z-20">The Past Participle</h1>
+                <p class="text-xl font-outfit text-vintage-ink/90 mb-8 leading-relaxed text-center max-w-4xl mx-auto relative z-20">
+                    To form the Present Perfect, you <strong class="text-vintage-orange font-bold">MUST</strong> use the 3rd form of the verb (V3).
+                    <br><br><span class="bg-black/10 px-4 py-2 rounded-lg font-bold">Subject + Have/Has + V3</span>
+                </p>
+                
+                <div class="bg-white/50 p-8 rounded-2xl shadow-sm border-2 border-vintage-ink/20 w-full max-w-3xl transform rotate-1 mx-auto relative z-20">
+                    <div class="border-b-4 border-double border-vintage-ink/30 pb-4 mb-4 flex justify-between font-black font-oswald text-xl md:text-2xl text-vintage-ink">
+                        <span class="w-1/3 text-center">V1 (Present)</span>
+                        <span class="w-1/3 text-center">V2 (Past)</span>
+                        <span class="w-1/3 text-center text-vintage-orange">V3 (Participle)</span>
+                    </div>
+                    
+                    <div class="flex flex-col gap-4 font-mono text-lg md:text-xl text-vintage-ink/80 font-bold">
+                        <div class="flex justify-between border-b border-vintage-ink/10 pb-2">
+                            <span class="w-1/3 text-center">See</span>
+                            <span class="w-1/3 text-center">Saw</span>
+                            <span class="w-1/3 text-center text-vintage-orange bg-vintage-orange/10 rounded">Seen</span>
+                        </div>
+                        <div class="flex justify-between border-b border-vintage-ink/10 pb-2">
+                            <span class="w-1/3 text-center">Do</span>
+                            <span class="w-1/3 text-center">Did</span>
+                            <span class="w-1/3 text-center text-vintage-orange bg-vintage-orange/10 rounded">Done</span>
+                        </div>
+                        <div class="flex justify-between border-b border-vintage-ink/10 pb-2">
+                            <span class="w-1/3 text-center">Be</span>
+                            <span class="w-1/3 text-center">Was/Were</span>
+                            <span class="w-1/3 text-center text-vintage-orange bg-vintage-orange/10 rounded">Been</span>
+                        </div>
+                        <div class="flex justify-between pb-2">
+                            <span class="w-1/3 text-center">Know</span>
+                            <span class="w-1/3 text-center">Knew</span>
+                            <span class="w-1/3 text-center text-vintage-orange bg-vintage-orange/10 rounded">Known</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 15: GRAMMAR TUNER -->
+            <section class="slide" id="slide-14">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 15 • The Tuner</h2>
+                <h1 class="text-4xl lg:text-5xl font-black font-oswald text-vintage-ink mb-6 relative text-center z-20">Past vs. Perfect</h1>
+                <p class="text-xl font-outfit text-vintage-ink/90 mb-8 leading-relaxed text-center relative z-20">
+                    Toggle the switch to see the difference between a <strong class="text-[#10b981]">Specific Event</strong> and a <strong class="text-vintage-orange">Life Experience</strong>.
+                </p>
+                
+                <div class="bg-[#2c1e16] p-6 md:p-10 rounded-3xl shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 md:gap-12 border-4 border-[#1a110b] w-full max-w-5xl mt-auto mx-auto relative z-20">
+                    
+                    <div class="bg-[#0a0a0a] border-4 border-gray-600 rounded-2xl relative overflow-hidden w-full h-[280px] shadow-inner">
+                        <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0),rgba(255,255,255,0),rgba(0,0,0,0.2))] bg-[length:100%_4px] pointer-events-none z-20"></div>
+                        
+                        <div class="w-full h-full relative z-10 flex flex-col justify-center items-center">
+                            
+                            <!-- PAST (AM) -->
+                            <div id="gram-past" class="w-full text-center transition-all duration-500 absolute px-4 opacity-100 transform translate-y-0">
+                                <div class="mb-4">
+                                    <p class="font-mono text-xl md:text-3xl text-[#10b981] font-bold mb-1">Did you go to London <span class="underline text-white bg-white/20 px-2 rounded inline-block mt-1 md:mt-0">in 2018</span>?</p>
+                                    <p class="font-outfit text-[#10b981]/70 text-sm">Specific time in the past.</p>
+                                </div>
+                                <div class="w-1/2 h-px bg-gray-700/50 mx-auto my-4"></div>
+                                <div>
+                                    <p class="font-mono text-xl md:text-3xl text-[#10b981] font-bold mb-1">Did you see the rain <span class="underline text-white bg-white/20 px-2 rounded inline-block mt-1 md:mt-0">yesterday</span>?</p>
+                                    <p class="font-outfit text-[#10b981]/70 text-sm">Finished action.</p>
+                                </div>
+                            </div>
+                            <!-- PRESENT PERFECT (FM) -->
+                            <div id="gram-perf" class="w-full text-center transition-all duration-500 absolute px-4 opacity-0 pointer-events-none transform translate-y-10">
+                                <div class="mb-4">
+                                    <p class="font-mono text-xl md:text-3xl text-vintage-orange font-bold mb-1">Have you <span class="underline text-white bg-white/20 px-2 rounded inline-block mt-1 md:mt-0">ever</span> been to London?</p>
+                                    <p class="font-outfit text-vintage-orange/70 text-sm">Life experience.</p>
+                                </div>
+                                <div class="w-1/2 h-px bg-gray-700/50 mx-auto my-4"></div>
+                                <div>
+                                    <p class="font-mono text-xl md:text-3xl text-vintage-orange font-bold mb-1">Have you <span class="underline text-white bg-white/20 px-2 rounded inline-block mt-1 md:mt-0">ever</span> seen the rain?</p>
+                                    <p class="font-outfit text-vintage-orange/70 text-sm">Life experience.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col items-center gap-3 shrink-0 px-4 mt-2">
+                        <span class="font-mono text-gray-400 text-sm font-bold uppercase tracking-widest">Tuner</span>
+                        <div class="w-24 h-10 bg-[#111] rounded-full p-1 cursor-pointer border-2 border-[#444] shadow-inner relative" onclick="toggleGrammarFreq()">
+                            <div id="tuner-knob" class="w-8 h-8 bg-gray-300 rounded-full shadow-md transform transition-transform duration-300 absolute left-1"></div>
+                        </div>
+                        <div class="flex justify-between w-28 font-bold text-gray-500 text-xs font-mono uppercase">
+                            <span>Past</span><span>Perf</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 16: DRILL 1 -->
+            <section class="slide" id="slide-15">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 16 • Grammar Drill</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-8 relative text-center z-20">Auxiliary Verb</h1>
+                <p class="text-2xl font-outfit text-vintage-ink/90 mb-8 font-medium relative text-center z-20">Which auxiliary verb is correct for "She"?</p>
+                <div class="text-2xl md:text-3xl font-bold mb-10 bg-white/50 p-8 rounded-xl text-center text-vintage-ink border-2 border-vintage-ink/20 relative w-full max-w-4xl mx-auto z-20">
+                    "<span class="text-vintage-orange underline">_______</span> she ever seen the rain?"
+                </div>
+                <div class="grid grid-cols-2 gap-4 w-full max-w-4xl mx-auto options-group relative z-20">
+                    <button class="bg-white/50 border-2 border-vintage-ink/20 p-5 rounded-xl text-2xl font-bold text-vintage-ink hover:border-vintage-orange mcq-btn" onclick="selectMCQ(this, 'wrong')">Have</button>
+                    <button class="bg-white/50 border-2 border-vintage-ink/20 p-5 rounded-xl text-2xl font-bold text-vintage-ink hover:border-vintage-orange mcq-btn" onclick="selectMCQ(this, 'correct', 'hub-track16')">Has</button>
+                </div>
+                <div class="hidden mt-6 p-4 border-l-4 border-vintage-orange bg-vintage-orange/10 font-mono text-vintage-ink font-bold relative w-full max-w-4xl mx-auto text-center text-xl z-20" id="hub-track16">
+                    > Correct! He/She/It uses "Has".
+                </div>
+            </section>
+
+            <!-- SLIDE 17: DRILL 2 -->
+            <section class="slide" id="slide-16">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 17 • Grammar Drill</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-8 relative text-center z-20">Past Participle</h1>
+                <p class="text-2xl font-outfit text-vintage-ink/90 mb-8 font-medium relative text-center z-20">"See" is an irregular verb. What is the correct Past Participle (V3)?</p>
+                <div class="space-y-4 w-full max-w-4xl mx-auto options-group relative z-20">
+                    <button class="w-full text-left bg-white/50 border-2 border-vintage-ink/20 p-5 rounded-xl text-xl font-outfit text-vintage-ink font-medium hover:border-vintage-orange transition-colors mcq-btn" onclick="selectMCQ(this, 'wrong')">A) see</button>
+                    <button class="w-full text-left bg-white/50 border-2 border-vintage-ink/20 p-5 rounded-xl text-xl font-outfit text-vintage-ink font-medium hover:border-vintage-orange transition-colors mcq-btn" onclick="selectMCQ(this, 'wrong')">B) saw</button>
+                    <button class="w-full text-left bg-white/50 border-2 border-vintage-ink/20 p-5 rounded-xl text-xl font-outfit text-vintage-ink font-medium hover:border-vintage-orange transition-colors mcq-btn" onclick="selectMCQ(this, 'correct', 'hub-track17')">C) seen</button>
+                </div>
+                <div class="hidden mt-6 p-4 border-l-4 border-vintage-orange bg-vintage-orange/10 font-mono text-vintage-ink font-bold w-full max-w-4xl mx-auto relative text-center text-xl z-20" id="hub-track17">
+                    > Correct! Present: See. Past: Saw. Participle: Seen.
+                </div>
+            </section>
+
+            <!-- SLIDE 18: TAPE SPLICER -->
+            <section class="slide" id="slide-17">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 18 • Minigame</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-6 relative z-20">Tape Splicer</h1>
+                <p class="text-xl font-outfit text-vintage-ink/80 mb-10 relative text-center z-20">Connect the magnetic tape pieces to build the famous question.</p>
+                
+                <div class="bg-[#1e1e1e] p-8 lg:p-10 rounded-2xl border-[6px] border-[#2c1e16] shadow-xl text-center w-full max-w-4xl mx-auto relative z-20">
+                    <div class="text-xl lg:text-4xl font-bold mb-12 leading-loose text-white font-mono flex flex-wrap justify-center items-center gap-y-4">
+                        " <span class="tape-blank" id="t-blank1" onclick="returnTape(1)"></span> you <span class="tape-blank" id="t-blank2" onclick="returnTape(2)"></span> seen the rain? "
+                    </div>
+                    <div class="flex gap-4 justify-center flex-wrap" id="tape-bank">
+                        <div class="tape-piece text-xl lg:text-2xl" onclick="fillTape(this, 'Did')">Did</div>
+                        <div class="tape-piece text-xl lg:text-2xl" onclick="fillTape(this, 'Have')">Have</div>
+                        <div class="tape-piece text-xl lg:text-2xl" onclick="fillTape(this, 'ever')">ever</div>
+                        <div class="tape-piece text-xl lg:text-2xl" onclick="fillTape(this, 'never')">never</div>
+                    </div>
+                </div>
+                <div id="tape-hub" class="hidden mt-8 p-4 border-l-4 border-[#10b981] bg-[#10b981]/10 font-mono text-vintage-ink font-bold text-lg lg:text-xl w-full max-w-4xl mx-auto relative text-center z-20">
+                    > RECORDING SUCCESSFUL! "Have you ever seen the rain?"
+                </div>
+            </section>
+
+            <!-- SLIDE 19: SPEAKING -->
+            <section class="slide" id="slide-18">
+                <h2 class="font-mono font-bold text-vintage-blue tracking-widest uppercase text-sm mb-4 relative z-20">Track 19 • Speaking</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-8 relative z-20">Have you ever...?</h1>
+                <p class="text-xl font-outfit text-vintage-ink/80 mb-8 relative text-center z-20">Answer the questions using <strong class="text-vintage-blue">"Yes, I have"</strong> or <strong class="text-vintage-orange">"No, I haven't"</strong>.</p>
+
+                <div class="space-y-4 lg:space-y-6 w-full max-w-4xl mx-auto relative z-20">
+                    <div class="bg-white border-2 border-vintage-ink/10 p-5 lg:p-6 rounded-xl shadow-sm hover:shadow-md cursor-pointer text-left transition-colors" onclick="toggleAnswer(this)">
+                        <p class="font-mono font-bold text-lg lg:text-2xl text-vintage-ink mb-2">> Have you ever traveled to another country?</p>
+                        <p class="font-outfit text-base lg:text-lg text-vintage-blue hidden answer-text font-medium">Follow up: If yes, when did you go?</p>
+                    </div>
+                    <div class="bg-white border-2 border-vintage-ink/10 p-5 lg:p-6 rounded-xl shadow-sm hover:shadow-md cursor-pointer text-left transition-colors" onclick="toggleAnswer(this)">
+                        <p class="font-mono font-bold text-lg lg:text-2xl text-vintage-ink mb-2">> Have you ever eaten something very strange?</p>
+                        <p class="font-outfit text-base lg:text-lg text-vintage-blue hidden answer-text font-medium">Follow up: If yes, what was it?</p>
+                    </div>
+                    <div class="bg-white border-2 border-vintage-ink/10 p-5 lg:p-6 rounded-xl shadow-sm hover:shadow-md cursor-pointer text-left transition-colors" onclick="toggleAnswer(this)">
+                        <p class="font-mono font-bold text-lg lg:text-2xl text-vintage-ink mb-2">> Have you ever sung karaoke?</p>
+                        <p class="font-outfit text-base lg:text-lg text-vintage-blue hidden answer-text font-medium">Follow up: If yes, what song did you sing?</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 20: MEMORY MATCH (FIXED COLORS) -->
+            <section class="slide" id="slide-19">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 20 • Minigame</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-8 relative text-center z-20">Memory Match</h1>
+                <p class="text-xl font-outfit text-vintage-ink/80 mb-8 relative text-center z-20">Match the base verb to its Past Participle.</p>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 lg:gap-4 w-full max-w-4xl mx-auto relative z-20" id="memory-grid">
+                    <!-- JS injected securely -->
+                </div>
+                <div id="memory-hub" class="hidden mt-8 p-4 border-l-4 border-vintage-orange bg-vintage-orange/10 font-mono text-vintage-ink font-bold w-full max-w-4xl mx-auto relative text-center text-xl z-20">
+                    > Awesome memory! These are essential irregular verbs.
+                </div>
+            </section>
+
+            <!-- SLIDE 21: TIMELINE -->
+            <section class="slide" id="slide-20">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 21 • Minigame</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-8 relative z-20">The Timeline</h1>
+                <p class="text-xl font-outfit text-vintage-ink/80 mb-8 relative text-center z-20">Click the lyrics in the correct chronological order as they appear in the song.</p>
+                <div class="flex flex-col gap-4 w-full max-w-4xl mx-auto relative z-20" id="timeline-container">
+                    <div class="timeline-item p-4 lg:p-6 rounded-xl text-lg lg:text-xl font-bold flex items-center justify-between bg-white border-2 border-vintage-ink/10" data-order="2" onclick="selectTimeline(this)">
+                        <span>"There's a calm before the storm"</span>
+                        <span class="timeline-number w-8 h-8 rounded-full bg-vintage-orange text-white items-center justify-center text-sm shrink-0 ml-4"></span>
+                    </div>
+                    <div class="timeline-item p-4 lg:p-6 rounded-xl text-lg lg:text-xl font-bold flex items-center justify-between bg-white border-2 border-vintage-ink/10" data-order="1" onclick="selectTimeline(this)">
+                        <span>"Someone told me long ago"</span>
+                        <span class="timeline-number w-8 h-8 rounded-full bg-vintage-orange text-white items-center justify-center text-sm shrink-0 ml-4"></span>
+                    </div>
+                    <div class="timeline-item p-4 lg:p-6 rounded-xl text-lg lg:text-xl font-bold flex items-center justify-between bg-white border-2 border-vintage-ink/10" data-order="3" onclick="selectTimeline(this)">
+                        <span>"It'll rain a sunny day"</span>
+                        <span class="timeline-number w-8 h-8 rounded-full bg-vintage-orange text-white items-center justify-center text-sm shrink-0 ml-4"></span>
+                    </div>
+                </div>
+                <div class="flex gap-4 mt-6 w-full max-w-4xl mx-auto justify-center relative z-20">
+                    <button onclick="resetTimeline()" class="px-6 py-2 rounded-lg border-2 border-vintage-ink/20 font-bold text-vintage-ink hover:bg-white transition-colors">Reset</button>
+                </div>
+                <div id="timeline-hub" class="hidden mt-6 p-4 border-l-4 border-vintage-orange bg-vintage-orange/10 font-mono text-vintage-ink font-bold w-full max-w-4xl mx-auto text-center relative text-xl z-20">
+                    > Correct! First the past memory, then the warning, then the metaphor.
+                </div>
+            </section>
+
+            <!-- SLIDE 22: ODD ONE OUT -->
+            <section class="slide" id="slide-21">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 22 • Minigame</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-8 relative z-20">Odd One Out</h1>
+                <p class="text-xl font-outfit text-vintage-ink/80 mb-8 relative text-center z-20">Click the ONLY verb that is <strong class="text-vintage-ink">NOT</strong> a Past Participle.</p>
+                <div class="grid grid-cols-2 gap-4 lg:gap-6 w-full max-w-3xl mx-auto relative z-20">
+                    <button onclick="checkOddOneOut(this, false)" class="bg-white/50 border-2 border-vintage-ink/20 py-6 lg:py-8 rounded-xl font-bold text-xl lg:text-2xl text-vintage-ink hover:border-vintage-orange transition-colors">Seen</button>
+                    <button onclick="checkOddOneOut(this, false)" class="bg-white/50 border-2 border-vintage-ink/20 py-6 lg:py-8 rounded-xl font-bold text-xl lg:text-2xl text-vintage-ink hover:border-vintage-orange transition-colors">Done</button>
+                    <button onclick="checkOddOneOut(this, true)" class="bg-white/50 border-2 border-vintage-ink/20 py-6 lg:py-8 rounded-xl font-bold text-xl lg:text-2xl text-vintage-ink hover:border-vintage-orange transition-colors">Wrote</button>
+                    <button onclick="checkOddOneOut(this, false)" class="bg-white/50 border-2 border-vintage-ink/20 py-6 lg:py-8 rounded-xl font-bold text-xl lg:text-2xl text-vintage-ink hover:border-vintage-orange transition-colors">Known</button>
+                </div>
+                <div id="odd-hub" class="hidden mt-8 p-4 border-l-4 border-vintage-orange bg-vintage-orange/10 font-mono text-vintage-ink font-bold w-full max-w-3xl mx-auto relative text-center text-xl z-20">
+                    > Correct! "Wrote" is Simple Past. The Participle is "Written".
+                </div>
+            </section>
+
+            <!-- SLIDE 23: BAMBOOZLE -->
+            <section class="slide" id="slide-22">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 23 • Rapid Fire</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-8 relative text-center z-20">Bamboozle Mode</h1>
+                <p class="text-xl font-outfit text-vintage-ink/80 mb-8 relative text-center z-20">Answer 3 consecutive True or False questions without missing!</p>
+                
+                <div id="rapid-q1" class="rapid-card bg-white/50 border-t-4 border-[#10b981] p-6 lg:p-10 rounded-2xl shadow-sm text-center w-full max-w-4xl mx-auto relative z-20">
+                    <span class="text-vintage-ink font-bold text-sm uppercase tracking-widest mb-4 block">Question 1 / 3</span>
+                    <p class="text-2xl lg:text-3xl font-bold mb-8 lg:mb-10 text-vintage-ink">"Have you ever..." is used to ask about a specific time yesterday.</p>
+                    <div class="flex gap-4 lg:gap-6 justify-center">
+                        <button onclick="checkRapid(this, 1, false)" class="w-28 lg:w-32 bg-[#2c1e16] text-white py-3 rounded-xl font-bold text-lg lg:text-xl transition-colors">True</button>
+                        <button onclick="checkRapid(this, 1, true)" class="w-28 lg:w-32 bg-[#2c1e16] text-white py-3 rounded-xl font-bold text-lg lg:text-xl transition-colors">False</button>
+                    </div>
+                </div>
+
+                <div id="rapid-q2" class="rapid-card hidden-card bg-white/50 border-t-4 border-[#10b981] p-6 lg:p-10 rounded-2xl shadow-sm text-center w-full max-w-4xl mx-auto relative z-20">
+                    <span class="text-vintage-ink font-bold text-sm uppercase tracking-widest mb-4 block">Question 2 / 3</span>
+                    <p class="text-2xl lg:text-3xl font-bold mb-8 lg:mb-10 text-vintage-ink">"Seen" is the Past Participle of "See".</p>
+                    <div class="flex gap-4 lg:gap-6 justify-center">
+                        <button onclick="checkRapid(this, 2, true)" class="w-28 lg:w-32 bg-[#2c1e16] text-white py-3 rounded-xl font-bold text-lg lg:text-xl transition-colors">True</button>
+                        <button onclick="checkRapid(this, 2, false)" class="w-28 lg:w-32 bg-[#2c1e16] text-white py-3 rounded-xl font-bold text-lg lg:text-xl transition-colors">False</button>
+                    </div>
+                </div>
+
+                <div id="rapid-q3" class="rapid-card hidden-card bg-white/50 border-t-4 border-[#10b981] p-6 lg:p-10 rounded-2xl shadow-sm text-center w-full max-w-4xl mx-auto relative z-20">
+                    <span class="text-vintage-ink font-bold text-sm uppercase tracking-widest mb-4 block">Question 3 / 3</span>
+                    <p class="text-2xl lg:text-3xl font-bold mb-8 lg:mb-10 text-vintage-ink">The song is literally about rain in California.</p>
+                    <div class="flex gap-4 lg:gap-6 justify-center">
+                        <button onclick="checkRapid(this, 3, false)" class="w-28 lg:w-32 bg-[#2c1e16] text-white py-3 rounded-xl font-bold text-lg lg:text-xl transition-colors">True</button>
+                        <button onclick="checkRapid(this, 3, true)" class="w-28 lg:w-32 bg-[#2c1e16] text-white py-3 rounded-xl font-bold text-lg lg:text-xl transition-colors">False</button>
+                    </div>
+                </div>
+
+                <div id="rapid-hub" class="hidden mt-8 p-4 border-l-4 border-[#10b981] bg-[#10b981]/10 font-mono text-vintage-ink font-bold text-center w-full max-w-4xl mx-auto relative z-20">
+                    > FLAWLESS VICTORY! 🏆
+                </div>
+            </section>
+
+            <!-- SLIDE 24: RHYME MATCHER -->
+            <section class="slide" id="slide-23">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 24 • Minigame</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-8 relative z-20">Rhyme Matcher</h1>
+                <p class="text-xl font-outfit text-vintage-ink/80 mb-8 relative text-center z-20">Match the words that have the same ending sound in the song.</p>
+                <div class="flex gap-4 lg:gap-6 justify-center w-full max-w-4xl mx-auto relative z-20">
+                    <div class="flex flex-col gap-3 lg:gap-4 w-1/2" id="rhyme-col-a">
+                        <button class="rhyme-btn bg-white py-3 rounded-xl font-bold text-lg lg:text-xl border-2 border-vintage-ink/20" data-id="1" data-side="a" onclick="selectRhyme(this)">Say</button>
+                        <button class="rhyme-btn bg-white py-3 rounded-xl font-bold text-lg lg:text-xl border-2 border-vintage-ink/20" data-id="2" data-side="a" onclick="selectRhyme(this)">Sun</button>
+                        <button class="rhyme-btn bg-white py-3 rounded-xl font-bold text-lg lg:text-xl border-2 border-vintage-ink/20" data-id="3" data-side="a" onclick="selectRhyme(this)">Fast</button>
+                        <button class="rhyme-btn bg-white py-3 rounded-xl font-bold text-lg lg:text-xl border-2 border-vintage-ink/20" data-id="4" data-side="a" onclick="selectRhyme(this)">Know</button>
+                    </div>
+                    <div class="flex flex-col gap-3 lg:gap-4 w-1/2" id="rhyme-col-b">
+                        <button class="rhyme-btn bg-white py-3 rounded-xl font-bold text-lg lg:text-xl border-2 border-vintage-ink/20" data-id="4" data-side="b" onclick="selectRhyme(this)">Go</button>
+                        <button class="rhyme-btn bg-white py-3 rounded-xl font-bold text-lg lg:text-xl border-2 border-vintage-ink/20" data-id="1" data-side="b" onclick="selectRhyme(this)">Day</button>
+                        <button class="rhyme-btn bg-white py-3 rounded-xl font-bold text-lg lg:text-xl border-2 border-vintage-ink/20" data-id="2" data-side="b" onclick="selectRhyme(this)">Begun</button>
+                        <button class="rhyme-btn bg-white py-3 rounded-xl font-bold text-lg lg:text-xl border-2 border-vintage-ink/20" data-id="3" data-side="b" onclick="selectRhyme(this)">Past</button>
+                    </div>
+                </div>
+                <div id="rhyme-hub" class="hidden mt-8 p-4 border-l-4 border-vintage-orange bg-vintage-orange/10 font-mono text-vintage-ink font-bold w-full max-w-4xl mx-auto text-center relative text-xl z-20">
+                    > Perfect! Classic rock songs use very simple and clear rhymes.
+                </div>
+            </section>
+
+            <!-- SLIDE 25: MISSING LYRICS -->
+            <section class="slide" id="slide-24">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 25 • Minigame</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-8 relative z-20">Missing Pieces</h1>
+                <p class="text-xl font-outfit text-vintage-ink/80 mb-8 relative text-center z-20">Fill the blanks in order.</p>
+                
+                <div class="text-xl lg:text-2xl font-bold bg-white/50 p-6 lg:p-8 rounded-xl border-2 border-vintage-ink/20 leading-relaxed text-center text-vintage-ink w-full max-w-4xl mx-auto relative z-20">
+                    "I want to <span id="blank-1" class="border-b-4 border-gray-400 px-2 lg:px-4 text-gray-400">1</span><br>
+                    Have you <span id="blank-2" class="border-b-4 border-gray-400 px-2 lg:px-4 text-gray-400">2</span> seen the rain<br>
+                    Comin' down on a sunny <span id="blank-3" class="border-b-4 border-gray-400 px-2 lg:px-4 text-gray-400">3</span> ?"
+                </div>
+                
+                <div id="missing-word-bank" class="flex flex-wrap gap-3 lg:gap-4 mt-8 justify-center relative z-20">
+                    <button class="missing-btn bg-[#2c1e16] text-white px-5 lg:px-6 py-2 rounded-full hover:bg-vintage-orange transition-colors" onclick="fillMissingWord(this, 'day')">day</button>
+                    <button class="missing-btn bg-[#2c1e16] text-white px-5 lg:px-6 py-2 rounded-full hover:bg-vintage-orange transition-colors" onclick="fillMissingWord(this, 'know')">know</button>
+                    <button class="missing-btn bg-[#2c1e16] text-white px-5 lg:px-6 py-2 rounded-full hover:bg-vintage-orange transition-colors" onclick="fillMissingWord(this, 'ever')">ever</button>
+                </div>
+                <button onclick="resetMissing()" class="mt-6 text-sm text-vintage-ink/50 hover:text-vintage-ink underline relative z-20">Reset</button>
+
+                <div id="missing-hub" class="hidden mt-6 p-4 border-l-4 border-vintage-orange bg-vintage-orange/10 font-mono text-vintage-ink font-bold w-full max-w-4xl mx-auto text-center relative text-xl z-20">
+                    > "I want to know, have you ever seen the rain..."
+                </div>
+            </section>
+
+            <!-- SLIDE 26: LYRICS VERSE -->
+            <section class="slide" id="slide-25">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 26 • Reading</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-8 relative z-20">The Lyrics View</h1>
+                <p class="text-xl font-outfit text-vintage-ink/80 mb-8 relative text-center z-20">Click on the <span class="text-vintage-orange font-bold">orange words</span> to open the Interactive Insights!</p>
+                <div class="w-full max-w-4xl mx-auto flex-1 bg-white/40 border-2 border-vintage-ink/10 rounded-2xl p-6 lg:p-10 overflow-y-auto relative text-center md:text-left shadow-inner z-20">
+                    <div class="space-y-4 text-2xl lg:text-4xl font-black font-oswald text-vintage-ink/80 leading-tight">
+                        <p class="text-vintage-ink">Someone told me long <span class="lyric-highlight" onclick="openLyricInsight('ago')">ago</span></p>
+                        <p>There's a <span class="lyric-highlight" onclick="openLyricInsight('calm-storm')">calm before the storm</span></p>
+                        <p class="text-vintage-ink">I know, it's been comin' for some time</p>
+                        <p>When it's over, so they say</p>
+                        <p class="text-white bg-vintage-ink/10 inline-block px-2 rounded">It'll rain a <span class="lyric-highlight" onclick="openLyricInsight('sunny-day')">sunny day</span></p>
+                        <br>
+                        <p class="text-vintage-ink">I know, <span class="lyric-highlight" onclick="openLyricInsight('shining-water')">shining down like water</span></p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 27: LYRICS CHORUS -->
+            <section class="slide" id="slide-26">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 27 • Reading</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-8 relative z-20">The Chorus</h1>
+                <div class="w-full max-w-4xl mx-auto flex-1 bg-white/40 border-2 border-vintage-ink/10 rounded-2xl p-6 lg:p-10 overflow-y-auto flex items-center justify-center relative shadow-inner z-20">
+                    <div class="space-y-6 text-3xl md:text-4xl lg:text-5xl font-black font-oswald text-vintage-ink/80 text-center w-full leading-tight">
+                        <p class="text-vintage-ink">I want to know,</p>
+                        <p><span class="lyric-highlight" onclick="openLyricInsight('have-ever')">Have you ever</span> seen the rain?</p>
+                        <p class="text-vintage-ink">I want to know,</p>
+                        <p>Have you ever seen the rain</p>
+                        <p class="text-vintage-ink">Comin' down on a sunny day?</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 28: ROLEPLAY -->
+            <section class="slide" id="slide-27">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 28 • Roleplay</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-8 relative z-20 text-center">Two Old Friends</h1>
+                <p class="text-xl font-outfit text-vintage-ink/80 mb-8 relative text-center z-20">Teacher and Student are friends who haven't seen each other in years.</p>
+                <div class="bg-white/80 p-8 lg:p-10 rounded-2xl border-2 border-vintage-ink/20 shadow-md w-full max-w-4xl mx-auto relative z-20">
+                    <h3 class="text-2xl lg:text-3xl font-black font-oswald text-vintage-ink mb-6 text-center">Catching Up ☕</h3>
+                    <p class="text-lg lg:text-xl text-vintage-ink/80 text-center font-medium">Ask your friend about 3 crazy things using <strong class="text-vintage-blue">"Have you ever...?"</strong></p>
+                    <p class="text-center text-vintage-orange font-bold mt-6 text-sm lg:text-base">(Teacher: Answer the student and ask them back!)</p>
+                </div>
+            </section>
+
+            <!-- SLIDE 29: SONG REVIEW -->
+            <section class="slide" id="slide-28">
+                <h2 class="font-mono font-bold text-vintage-orange tracking-widest uppercase text-sm mb-4 relative z-20">Track 29 • Review</h2>
+                <h1 class="text-4xl lg:text-6xl font-black font-oswald text-vintage-ink mb-8 relative z-20">Song Review</h1>
+                <p class="text-xl font-outfit text-vintage-ink/80 mb-10 text-center relative z-20">How many stars do you give to "Have You Ever Seen The Rain"?</p>
+                <div class="flex justify-center gap-2 lg:gap-4 w-full mb-10 relative z-20">
+                    <button onclick="rateSong(this, 1)" class="star-btn text-5xl lg:text-6xl opacity-30 hover:opacity-100 hover:scale-110 transition-all drop-shadow-md grayscale hover:grayscale-0">⭐</button>
+                    <button onclick="rateSong(this, 2)" class="star-btn text-5xl lg:text-6xl opacity-30 hover:opacity-100 hover:scale-110 transition-all drop-shadow-md grayscale hover:grayscale-0">⭐</button>
+                    <button onclick="rateSong(this, 3)" class="star-btn text-5xl lg:text-6xl opacity-30 hover:opacity-100 hover:scale-110 transition-all drop-shadow-md grayscale hover:grayscale-0">⭐</button>
+                    <button onclick="rateSong(this, 4)" class="star-btn text-5xl lg:text-6xl opacity-30 hover:opacity-100 hover:scale-110 transition-all drop-shadow-md grayscale hover:grayscale-0">⭐</button>
+                    <button onclick="rateSong(this, 5)" class="star-btn text-5xl lg:text-6xl opacity-30 hover:opacity-100 hover:scale-110 transition-all drop-shadow-md grayscale hover:grayscale-0">⭐</button>
+                </div>
+                <div id="review-hub" class="hidden mt-6 p-4 border-l-4 border-vintage-orange bg-vintage-orange/10 font-mono text-vintage-ink font-bold text-center relative text-xl z-20">
+                    > You gave it <span id="star-count" class="text-vintage-orange">X</span> stars!
+                </div>
+            </section>
+
+            <!-- SLIDE 30: END -->
+            <section class="slide" id="slide-29">
+                <div class="text-center mt-10 w-full relative z-20">
+                    <div class="w-40 h-40 lg:w-48 lg:h-48 mx-auto bg-gradient-to-tr from-vintage-orange to-vintage-blue rounded-full flex items-center justify-center border-[8px] border-vintage-ink shadow-2xl mb-8 transform -rotate-12">
+                        <span class="text-white font-black font-oswald text-5xl lg:text-6xl italic">CCR</span>
+                    </div>
+                    <h1 class="text-5xl lg:text-6xl font-black font-oswald text-vintage-ink mb-4 italic tracking-tight">Platinum Record</h1>
+                    <p class="text-xl lg:text-2xl font-outfit text-vintage-ink/80 mb-12 font-medium">You survived the storm. Class dismissed!</p>
+                    <button onclick="goToSlide(0)" class="bg-vintage-ink text-white font-mono font-bold py-3 lg:py-4 px-8 lg:px-12 rounded-xl text-lg lg:text-xl hover:bg-vintage-orange hover:text-black transition-colors shadow-md hover:shadow-xl">EJECT TAPE & RESTART</button>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- Dashboard Controls (Bottom Panel) -->
+        <div class="h-20 lg:h-28 m-4 lg:m-8 mt-0 flex items-center justify-between px-4 lg:px-8 border-t-2 border-gray-600/30 z-10 bg-[#1e1e1e] rounded-2xl shadow-inner shrink-0 relative">
+            
+            <!-- Left: Mini Turntable & LCD -->
+            <div class="flex items-center gap-4 lg:gap-8 w-1/3">
+                <div class="relative w-12 h-12 lg:w-16 lg:h-16 shrink-0">
+                    <div id="vinyl-record" class="absolute inset-0 rounded-full bg-[#111] shadow-[0_2px_5px_rgba(0,0,0,0.8)] border-[2px] border-[#222] flex items-center justify-center vinyl-spin overflow-hidden">
+                        <img src="https://m.media-amazon.com/images/I/61hc8z07tNL._UF1000,1000_QL80_.jpg" class="w-full h-full object-cover opacity-90 sepia" style="padding: 2px; border-radius: 50%;">
+                        <div class="w-1.5 h-1.5 bg-black rounded-full shadow-inner z-20 absolute"></div>
+                    </div>
+                    <div id="tonearm" class="tonearm absolute top-0 -right-1 w-1.5 lg:w-2 h-8 lg:h-10 origin-top-right z-30 playing">
+                        <div class="w-2 h-2 bg-gray-300 rounded-full absolute top-0 right-0 shadow-md border border-gray-500"></div>
+                        <div class="w-0.5 h-full bg-gradient-to-b from-gray-300 to-gray-400 absolute top-1 right-0.5 rounded-full"></div>
+                        <div class="w-2 h-3 bg-gray-800 absolute bottom-[-2px] right-[-1px] rounded-sm transform rotate-12 shadow-sm border border-gray-600"></div>
+                    </div>
+                </div>
+                <div class="hidden lg:flex flex-col justify-center bg-[#0a0a0a] border-2 border-[#111] rounded-lg p-2 shadow-inner w-32 relative">
+                    <span class="text-vintage-orange font-mono text-[10px] font-bold tracking-widest uppercase" id="lcd-text">TRK 01</span>
+                    <div class="w-full bg-gray-800 h-1 mt-1 mb-1 rounded-full overflow-hidden">
+                        <div id="lcd-progress" class="h-full bg-vintage-orange w-0 transition-all duration-300"></div>
+                    </div>
+                    <p class="text-white font-bold text-sm truncate" id="lcd-title">Have You Ever Seen The Rain</p>
+                </div>
+            </div>
+
+            <!-- Center: Playback Controls -->
+            <div class="flex flex-col items-center justify-center gap-1 w-1/3">
+                <div class="flex items-center gap-4 lg:gap-6">
+                    <button onclick="prevSlide()" id="btn-prev" class="chunky-btn p-2 lg:p-3 rounded-full shadow-analog disabled:opacity-50 flex items-center justify-center active:scale-95 transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#fff" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+                    </button>
+                    
+                    <button onclick="togglePlayPause()" class="chunky-btn w-12 h-12 lg:w-16 lg:h-16 rounded-full shadow-analog flex items-center justify-center active:scale-95 transition-all border-vintage-orange">
+                        <svg id="icon-play" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#f97316" viewBox="0 0 24 24" class="hidden"><path d="M8 5v14l11-7z"/></svg>
+                        <svg id="icon-pause" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#f97316" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                    </button>
+
+                    <button onclick="nextSlide()" id="btn-next" class="chunky-btn p-2 lg:p-3 rounded-full shadow-analog disabled:opacity-50 flex items-center justify-center active:scale-95 transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#fff" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                    </button>
+                </div>
+                <span class="text-[10px] text-vintage-orange font-mono tracking-widest uppercase opacity-90 mt-1 text-center font-bold">WOLFFY powered by Wolf Labs</span>
+            </div>
+
+            <!-- Right: Tools & Fullscreen -->
+            <div class="flex items-center justify-end gap-3 lg:gap-4 w-1/3 text-brand-light">
+                <button onclick="toggleWhiteboard()" class="chunky-btn p-2 lg:p-3 rounded-xl shadow-analog flex items-center justify-center group" title="Teacher Tools">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2.5" class="group-active:scale-90 transition-transform"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                </button>
+                <button onclick="toggleFullScreen()" class="chunky-btn p-2 lg:p-3 rounded-xl shadow-analog flex items-center justify-center group hidden md:flex" title="Fullscreen">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="#fff" stroke-width="2.5" class="group-active:scale-90 transition-transform"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ================= TEACHER TOOLS (SLIDE OUT CLIPBOARD) ================= -->
+    <aside id="whiteboardPanel" class="fixed top-0 right-0 h-full w-full md:w-[500px] bg-amber-50 border-l-[16px] border-amber-900 text-vintage-ink z-50 transform translate-x-full transition-transform duration-500 flex flex-col shadow-2xl">
+        <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 w-32 h-12 bg-gray-400 border-2 border-gray-600 rounded-t-xl flex items-center justify-center shadow-md">
+            <div class="w-20 h-4 bg-gray-300 rounded-full border border-gray-500"></div>
+        </div>
+
+        <div class="p-6 pt-12 border-b-2 border-amber-900/10 flex justify-between items-center">
+            <h2 class="text-3xl font-black title-font italic">Manager's Notes</h2>
+            <button onclick="toggleWhiteboard()" class="text-amber-900 hover:text-vintage-orange transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        
+        <div class="p-6 border-b-2 border-amber-900/10">
+            <span class="text-sm font-bold text-amber-900/50 code-font uppercase block mb-4">> QUICK PRAISE</span>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="triggerPraise('FAR OUT! ✌️', 'Awesome job!')" class="bg-transparent border-2 border-vintage-orange text-vintage-orange font-bold py-3 rounded text-sm hover:bg-vintage-orange hover:text-white transition-all font-mono">FAR OUT! ✌️</button>
+                <button onclick="triggerPraise('GROOVY! 🌼', 'You nailed it!')" class="bg-transparent border-2 border-vintage-blue text-vintage-blue font-bold py-3 rounded text-sm hover:bg-vintage-blue hover:text-white transition-all font-mono">GROOVY! 🌼</button>
+                <button onclick="triggerPraise('CLASSIC! 🎸', 'Great grammar!')" class="bg-transparent border-2 border-vintage-ink text-vintage-ink font-bold py-3 rounded text-sm hover:bg-vintage-ink hover:text-white transition-all font-mono">CLASSIC! 🎸</button>
+                <button onclick="triggerPraise('ROCK ON! 🤘', 'Keep it up!')" class="bg-transparent border-2 border-amber-600 text-amber-600 font-bold py-3 rounded text-sm hover:bg-amber-600 hover:text-white transition-all font-mono">ROCK ON! 🤘</button>
+            </div>
+        </div>
+
+        <div class="p-4 flex items-center justify-between border-b-2 border-amber-900/10">
+            <span class="text-sm font-bold text-amber-900/50 code-font uppercase">> LIVE SCRIPT</span>
+            <button onclick="clearNotepad()" class="text-red-500 hover:text-red-700 text-sm font-bold code-font transition-colors">Clear</button>
+            <button onclick="copyNotepad()" class="text-amber-600 hover:text-amber-800 text-sm font-bold code-font transition-colors ml-4">Copy</button>
+        </div>
+        <div class="flex-1 relative p-6 bg-[repeating-linear-gradient(transparent,transparent_31px,rgba(0,0,0,0.1)_31px,rgba(0,0,0,0.1)_32px)]">
+            <textarea id="teacher-notepad" class="w-full h-full bg-transparent text-vintage-ink text-xl font-outfit font-medium p-2 outline-none resize-none leading-[32px]" placeholder="Write vocabulary, translations, and notes here..."></textarea>
+        </div>
+    </aside>
+
+    <!-- ================= PRAISE OVERLAY ================= -->
+    <div id="praise-overlay" class="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none opacity-0 transition-opacity duration-300 bg-black/70 backdrop-blur-sm">
+        <div id="praise-card" class="bg-vintage-orange border-[8px] border-[#2c1e16] p-8 lg:p-12 rounded-3xl text-center transform scale-50 transition-all duration-500 shadow-2xl flex flex-col items-center">
+            <h1 id="praise-main" class="text-6xl md:text-8xl font-black font-oswald text-[#2c1e16] mb-4 italic tracking-tighter">GROOVY! 🌼</h1>
+            <p id="praise-sub" class="text-2xl md:text-4xl text-white font-bold font-mono">Awesome job!</p>
+        </div>
+    </div>
+
+    <!-- ================= LYRIC INSIGHTS OVERLAY ================= -->
+    <div id="lyric-insight-overlay" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300 p-4">
+        <div id="lyric-insight-card" class="bg-[#1a1a1a] border-[4px] border-vintage-orange rounded-3xl p-8 lg:p-12 max-w-3xl w-full shadow-[0_0_80px_rgba(249,115,22,0.3)] transform scale-95 transition-transform duration-300 relative flex flex-col">
+            
+            <button onclick="closeLyricInsight()" class="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors bg-black/50 p-3 rounded-full hover:bg-vintage-orange hover:text-black">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+            
+            <div class="mb-6 flex justify-start">
+                <span id="insight-badge" class="px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-widest text-black bg-vintage-orange shadow-lg">Grammar</span>
+            </div>
+
+            <h2 id="insight-title" class="text-4xl lg:text-5xl font-black font-oswald text-white mb-6 italic leading-tight">Have you ever...</h2>
+
+            <p id="insight-explanation" class="text-xl lg:text-2xl text-gray-300 leading-relaxed mb-8 font-outfit border-l-4 border-vintage-orange pl-6 bg-white/5 py-6 pr-4 rounded-r-xl">
+                Explanation text goes here.
+            </p>
+
+            <div class="bg-black p-6 lg:p-8 rounded-2xl border border-gray-800 mt-auto">
+                <p id="insight-question" class="text-xl lg:text-2xl font-bold text-vintage-orange mb-6 font-oswald italic tracking-wide">Question?</p>
+                
+                <div id="insight-options" class="flex flex-col gap-4">
+                    <!-- Buttons injected via JS -->
+                </div>
+                
+                <div id="insight-feedback" class="hidden mt-8 text-center text-[#10b981] font-black text-2xl uppercase tracking-widest font-oswald animate-pulse">
+                    Great Job! 🎸
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= JAVASCRIPT LOGIC ================= -->
+    <script>
+        // --- Lyric Insights Data ---
+        const lyricInsights = {
+            'ago': {
+                badge: 'Vocabulary',
+                badgeColor: 'bg-[#0ea5e9]', // vintage-blue
+                title: 'Long ago',
+                explanation: 'We use "ago" to talk about a specific time in the past (Ex: 2 days ago, 5 years ago). "Long ago" means many years in the past.',
+                question: 'What is something you did "a few days ago"?',
+                options: [
+                    'I watched a good movie. 🍿',
+                    'I studied English. 📚',
+                    'I met my friends. ✌️'
+                ]
+            },
+            'calm-storm': {
+                badge: 'Expression',
+                badgeColor: 'bg-[#f97316]', // vintage-orange
+                title: 'The calm before the storm',
+                explanation: 'A famous English idiom! It means a quiet, peaceful period before a time of trouble, chaos, or arguments.',
+                question: 'Have you ever experienced "the calm before the storm" in your life?',
+                options: [
+                    'Yes. Everything was quiet, and then a big problem happened.',
+                    'No. My problems usually happen without warning.'
+                ]
+            },
+            'sunny-day': {
+                badge: 'Metaphor',
+                badgeColor: 'bg-[#fbbf24]', // gold
+                title: 'Rain on a sunny day',
+                explanation: 'The "sunny day" is the band\'s success. The "rain" is their sadness and fights. He is talking about bad things happening during a good time.',
+                question: 'Is it possible to feel sad even when everything is going perfectly?',
+                options: [
+                    'Yes, emotions are complicated.',
+                    'No, if everything is perfect, you should be happy.'
+                ]
+            },
+            'shining-water': {
+                badge: 'Metaphor',
+                badgeColor: 'bg-[#0ea5e9]', // vintage-blue
+                title: 'Shining down like water',
+                explanation: 'He is comparing the bright, intense sun rays to heavy water falling. It represents how intense their success felt.',
+                question: 'Which weather do you prefer?',
+                options: [
+                    'A bright, shining sunny day! ☀️',
+                    'A calm, cloudy, and rainy day. 🌧️'
+                ]
+            },
+            'have-ever': {
+                badge: 'Grammar',
+                badgeColor: 'bg-[#f97316]', // vintage-orange
+                title: 'Have you ever seen...',
+                explanation: 'Present Perfect! We use "Have you ever..." to ask about your LIFE EXPERIENCES. It means: "In your entire life, from the day you were born until today, did you see this?"',
+                question: 'Have you ever seen snow in real life?',
+                options: [
+                    'Yes, I have! It is beautiful. ❄️',
+                    'No, I haven\'t. But I want to see it one day.'
+                ]
+            }
+        };
+
+        function openLyricInsight(key) {
+            const data = lyricInsights[key];
+            if(!data) return;
+
+            const badge = document.getElementById('insight-badge');
+            if (badge) {
+                badge.innerText = data.badge;
+                badge.className = `px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest text-black shadow-lg ${data.badgeColor}`;
+            }
+            
+            const titleEl = document.getElementById('insight-title');
+            if (titleEl) titleEl.innerText = `"${data.title}"`;
+            
+            const expEl = document.getElementById('insight-explanation');
+            if (expEl) expEl.innerHTML = data.explanation;
+            
+            const questEl = document.getElementById('insight-question');
+            if (questEl) questEl.innerText = data.question;
+
+            const optionsContainer = document.getElementById('insight-options');
+            if (optionsContainer) {
+                optionsContainer.innerHTML = '';
+                
+                const feedbackEl = document.getElementById('insight-feedback');
+                if (feedbackEl) feedbackEl.classList.add('hidden');
+
+                data.options.forEach(optText => {
+                    const btn = document.createElement('button');
+                    btn.className = 'insight-option-btn w-full text-left bg-black hover:bg-gray-800 py-4 px-6 rounded-xl font-bold transition-all text-xl text-gray-200 border-2 border-transparent leading-snug';
+                    btn.innerText = optText;
+                    btn.onclick = () => selectInsightOption(btn);
+                    optionsContainer.appendChild(btn);
+                });
+            }
+
+            const overlay = document.getElementById('lyric-insight-overlay');
+            const card = document.getElementById('lyric-insight-card');
+            
+            if (overlay && card) {
+                overlay.classList.remove('opacity-0', 'pointer-events-none');
+                overlay.classList.add('opacity-100', 'pointer-events-auto');
+                
+                setTimeout(() => {
+                    card.classList.replace('scale-95', 'scale-100');
+                }, 50);
+            }
+        }
+
+        function selectInsightOption(selectedBtn) {
+            const container = document.getElementById('insight-options');
+            if (!container) return;
+            
+            const buttons = container.querySelectorAll('button');
+            
+            buttons.forEach(b => {
+                b.classList.remove('selected', 'border-vintage-orange', 'bg-vintage-orange', 'text-black');
+                b.classList.add('opacity-50', 'pointer-events-none');
+            });
+
+            selectedBtn.classList.remove('opacity-50', 'bg-black', 'text-gray-200', 'hover:bg-gray-800');
+            selectedBtn.classList.add('bg-vintage-orange', 'text-black', 'border-vintage-orange', 'shadow-[0_0_20px_rgba(249,115,22,0.4)]');
+            
+            const feedbackEl = document.getElementById('insight-feedback');
+            if (feedbackEl) feedbackEl.classList.remove('hidden');
+        }
+
+        function closeLyricInsight() {
+            const overlay = document.getElementById('lyric-insight-overlay');
+            const card = document.getElementById('lyric-insight-card');
+            
+            if (card) card.classList.replace('scale-100', 'scale-95');
+            if (overlay) {
+                setTimeout(() => {
+                    overlay.classList.remove('opacity-100', 'pointer-events-auto');
+                    overlay.classList.add('opacity-0', 'pointer-events-none');
+                }, 200);
+            }
+        }
+
+
+        // --- Track Navigation State ---
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        const vinylRecord = document.getElementById('vinyl-record');
+        const tonearm = document.getElementById('tonearm');
+        const playIcon = document.getElementById('icon-play');
+        const pauseIcon = document.getElementById('icon-pause');
+        let isPlaying = true; 
+
+        function init() { 
+            updateUI(); 
+            if (vinylRecord) vinylRecord.classList.add('vinyl-spin');
+            if (tonearm) tonearm.classList.add('playing');
+            setupMemoryGame();
+        }
+        
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                slides[currentSlide].classList.remove('active');
+                currentSlide++;
+                slides[currentSlide].classList.add('active');
+                updateUI();
+                if(currentSlide === totalSlides - 1) shootConfetti();
+                
+                // Reset screen scroll inside analog screen
+                const screen = document.querySelector('.analog-screen');
+                if(screen) screen.scrollTop = 0;
+            }
+        }
+        function prevSlide() {
+            if (currentSlide > 0) {
+                slides[currentSlide].classList.remove('active');
+                currentSlide--;
+                slides[currentSlide].classList.add('active');
+                updateUI();
+                
+                const screen = document.querySelector('.analog-screen');
+                if(screen) screen.scrollTop = 0;
+            }
+        }
+        function goToSlide(index) {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = index;
+            slides[currentSlide].classList.add('active');
+            updateUI();
+            
+            const screen = document.querySelector('.analog-screen');
+            if(screen) screen.scrollTop = 0;
+        }
+
+        function updateUI() {
+            const btnP = document.getElementById('btn-prev');
+            const btnN = document.getElementById('btn-next');
+            if (btnP) btnP.disabled = currentSlide === 0;
+            if (btnN) btnN.disabled = currentSlide === totalSlides - 1;
+            
+            const trackNum = (currentSlide + 1).toString().padStart(2, '0');
+            const lcdText = document.getElementById('lcd-text');
+            if (lcdText) lcdText.innerText = `TRK ${trackNum}`;
+            
+            const progress = totalSlides > 1 ? (currentSlide / (totalSlides - 1)) * 100 : 0;
+            const lcdProgress = document.getElementById('lcd-progress');
+            if (lcdProgress) lcdProgress.style.width = `${progress}%`;
+            
+            const totalSecs = 159; // 2:39 for CCR
+            const curSecs = Math.floor((progress / 100) * totalSecs);
+            
+            const timeCurrent = document.getElementById('time-current');
+            if (timeCurrent) {
+                timeCurrent.innerText = `${Math.floor(curSecs/60)}:${(curSecs%60).toString().padStart(2,'0')}`;
+            }
+        }
+
+        function togglePlayPause() {
+            isPlaying = !isPlaying;
+            if(isPlaying) {
+                if (playIcon) playIcon.classList.add('hidden');
+                if (pauseIcon) pauseIcon.classList.remove('hidden');
+                if (vinylRecord) vinylRecord.classList.remove('vinyl-paused');
+                if (tonearm) tonearm.classList.add('playing');
+            } else {
+                if (pauseIcon) pauseIcon.classList.add('hidden');
+                if (playIcon) playIcon.classList.remove('hidden');
+                if (vinylRecord) vinylRecord.classList.add('vinyl-paused');
+                if (tonearm) tonearm.classList.remove('playing');
+            }
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(e=>console.log(e)); } 
+            else { if (document.exitFullscreen) { document.exitFullscreen(); } }
+        }
+        function toggleWhiteboard() {
+            const b = document.getElementById('whiteboardPanel');
+            if (b) b.classList.toggle('translate-x-full');
+        }
+
+        // --- Games & Logic ---
+        function selectMCQ(btn, answerIndex, hubId) {
+            const group = btn.closest('.options-group');
+            const correct = group.getAttribute('data-correct');
+            const buttons = group.querySelectorAll('.mcq-btn');
+            
+            buttons.forEach(b => {
+                b.classList.remove('bg-vintage-orange', 'text-white', 'border-vintage-orange');
+                b.classList.add('bg-white/50', 'text-vintage-ink');
+            });
+
+            if (answerIndex && answerIndex.toString() === correct || answerIndex === 'correct') {
+                btn.classList.replace('bg-white/50', 'bg-vintage-orange');
+                btn.classList.replace('text-vintage-ink', 'text-white');
+                btn.classList.add('border-vintage-orange');
+                if(hubId) {
+                    const hub = document.getElementById(hubId);
+                    if(hub) hub.classList.remove('hidden');
+                }
+            } else {
+                btn.classList.add('border-red-500', 'shake');
+                setTimeout(() => btn.classList.remove('shake', 'border-red-500'), 400);
+            }
+        }
+
+        function flipPolaroid(el, title, def, q) {
+            const hub = document.getElementById('polaroid-hub');
+            if(hub) hub.classList.remove('hidden');
+            
+            const pt = document.getElementById('p-title');
+            const pd = document.getElementById('p-def');
+            const pq = document.getElementById('p-q');
+            
+            if(pt) pt.innerText = title;
+            if(pd) pd.innerText = def;
+            if(pq) pq.innerText = q;
+            
+            const label = el.querySelector('.word-label');
+            if(label) {
+                label.innerText = title;
+                label.classList.replace('text-vintage-ink', 'text-vintage-orange');
+            }
+        }
+
+        // AM/FM Tuner Logic
+        function toggleGrammarFreq() {
+            const past = document.getElementById('gram-past');
+            const perf = document.getElementById('gram-perf');
+            const knob = document.getElementById('tuner-knob');
+            
+            if(knob.classList.contains('translate-x-14')) {
+                // Return to Past
+                knob.classList.remove('translate-x-14');
+                if(past) {
+                    past.classList.replace('opacity-0', 'opacity-100');
+                    past.classList.replace('-translate-y-10', 'translate-y-0');
+                    past.classList.remove('pointer-events-none');
+                }
+                if(perf) {
+                    perf.classList.replace('opacity-100', 'opacity-0');
+                    perf.classList.replace('translate-y-0', 'translate-y-10');
+                    perf.classList.add('pointer-events-none');
+                }
+            } else {
+                // Switch to Present Perfect
+                knob.classList.add('translate-x-14');
+                if(perf) {
+                    perf.classList.replace('opacity-0', 'opacity-100');
+                    perf.classList.replace('translate-y-10', 'translate-y-0');
+                    perf.classList.remove('pointer-events-none');
+                }
+                if(past) {
+                    past.classList.replace('opacity-100', 'opacity-0');
+                    past.classList.replace('translate-y-0', '-translate-y-10');
+                    past.classList.add('pointer-events-none');
+                }
+            }
+        }
+
+        // Tape Splicer
+        let activeBlank = 1;
+        const expectedTape = { 1: "Have", 2: "ever" };
+        function fillTape(btn, word) {
+            if(activeBlank > 2) return;
+            if(expectedTape[activeBlank] === word) {
+                const targetBlank = document.getElementById(`t-blank${activeBlank}`);
+                if (targetBlank) {
+                    targetBlank.innerText = word;
+                    targetBlank.classList.add('filled');
+                }
+                btn.classList.add('used');
+                activeBlank++;
+                if(activeBlank > 2) {
+                    const hub = document.getElementById('tape-hub');
+                    if (hub) hub.classList.remove('hidden');
+                }
+            } else {
+                btn.classList.add('shake', 'bg-red-500', 'text-white');
+                setTimeout(() => btn.classList.remove('shake', 'bg-red-500', 'text-white'), 400);
+            }
+        }
+        function returnTape(blankNum) {
+            const targetBlank = document.getElementById(`t-blank${blankNum}`);
+            if(!targetBlank) return;
+            const word = targetBlank.innerText;
+            if(!word) return;
+            
+            targetBlank.innerText = "";
+            targetBlank.classList.remove('filled');
+            
+            document.querySelectorAll('.tape-piece').forEach(p => { 
+                if(p.innerText === word) p.classList.remove('used'); 
+            });
+            activeBlank = blankNum;
+            const hub = document.getElementById('tape-hub');
+            if(hub) hub.classList.add('hidden');
+        }
+
+        function toggleAnswer(el) {
+            const p = el.querySelector('.answer-text');
+            if (p) {
+                if(p.classList.contains('hidden')) {
+                    p.classList.remove('hidden');
+                    el.classList.replace('border-vintage-ink/10', 'border-vintage-blue');
+                } else {
+                    p.classList.add('hidden');
+                    el.classList.replace('border-vintage-blue', 'border-vintage-ink/10');
+                }
+            }
+        }
+
+        const memoryPairs = [
+            { id: 1, text: "See" }, { id: 1, text: "Seen" },
+            { id: 2, text: "Do" },  { id: 2, text: "Done" },
+            { id: 3, text: "Be" }, { id: 3, text: "Been" },
+            { id: 4, text: "Know" }, { id: 4, text: "Known" }
+        ];
+        let hasFlippedCard = false;
+        let lockBoard = false;
+        let firstCard, secondCard;
+        let memoryMatches = 0;
+
+        function setupMemoryGame() {
+            const grid = document.getElementById('memory-grid');
+            if(!grid) return;
+            grid.innerHTML = '';
+            memoryMatches = 0;
+            const shuffled = memoryPairs.sort(() => 0.5 - Math.random());
+            shuffled.forEach(card => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'memory-card w-full';
+                cardEl.dataset.id = card.id;
+                cardEl.innerHTML = `
+                    <div class="memory-card-inner">
+                        <div class="memory-card-front text-transparent select-none">?</div>
+                        <div class="memory-card-back">${card.text}</div>
+                    </div>`;
+                cardEl.addEventListener('click', flipCard);
+                grid.appendChild(cardEl);
+            });
+        }
+
+        function flipCard(e) {
+            const clickedCard = e.currentTarget;
+            if (lockBoard) return;
+            if (clickedCard === firstCard) return;
+            if (clickedCard.classList.contains('matched')) return;
+
+            clickedCard.classList.add('flipped');
+
+            if (!hasFlippedCard) {
+                hasFlippedCard = true;
+                firstCard = clickedCard;
+                return;
+            }
+            secondCard = clickedCard;
+            checkForMatch();
+        }
+
+        function checkForMatch() {
+            let isMatch = firstCard.dataset.id === secondCard.dataset.id;
+            isMatch ? disableCards() : unflipCards();
+        }
+
+        function disableCards() {
+            firstCard.removeEventListener('click', flipCard);
+            secondCard.removeEventListener('click', flipCard);
+            firstCard.classList.add('matched');
+            secondCard.classList.add('matched');
+            
+            const b1 = firstCard.querySelector('.memory-card-back');
+            const b2 = secondCard.querySelector('.memory-card-back');
+            if (b1) {
+                b1.classList.replace('bg-[#2c1e16]', 'bg-vintage-orange');
+                b1.classList.replace('text-white', 'text-black');
+            }
+            if (b2) {
+                b2.classList.replace('bg-[#2c1e16]', 'bg-vintage-orange');
+                b2.classList.replace('text-white', 'text-black');
+            }
+
+            resetBoard();
+            memoryMatches++;
+            if(memoryMatches === 4) {
+                const hub = document.getElementById('memory-hub');
+                if (hub) hub.classList.remove('hidden');
+            }
+        }
+
+        function unflipCards() {
+            lockBoard = true;
+            firstCard.classList.add('shake');
+            secondCard.classList.add('shake');
+            
+            const b1 = firstCard.querySelector('.memory-card-back');
+            const b2 = secondCard.querySelector('.memory-card-back');
+            if (b1) b1.classList.replace('border-transparent', 'border-red-500');
+            if (b2) b2.classList.replace('border-transparent', 'border-red-500');
+            
+            setTimeout(() => {
+                firstCard.classList.remove('flipped', 'shake');
+                secondCard.classList.remove('flipped', 'shake');
+                if (b1) b1.classList.replace('border-red-500', 'border-transparent');
+                if (b2) b2.classList.replace('border-red-500', 'border-transparent');
+                resetBoard();
+            }, 800);
+        }
+        function resetBoard() { [hasFlippedCard, lockBoard] = [false, false]; [firstCard, secondCard] = [null, null]; }
+
+        let timelineExpected = [1, 2, 3];
+        let timelineCurrentClick = 0;
+        function selectTimeline(btn) {
+            if(btn.classList.contains('selected')) return;
+            const clickedOrder = parseInt(btn.getAttribute('data-order'));
+            if(clickedOrder === timelineExpected[timelineCurrentClick]) {
+                timelineCurrentClick++;
+                btn.classList.add('selected');
+                const num = btn.querySelector('.timeline-number');
+                if (num) num.innerText = timelineCurrentClick;
+                
+                if(timelineCurrentClick === 3) {
+                    const hub = document.getElementById('timeline-hub');
+                    if (hub) hub.classList.remove('hidden');
+                }
+            } else {
+                btn.classList.add('border-red-500', 'shake');
+                setTimeout(() => btn.classList.remove('border-red-500', 'shake'), 400);
+            }
+        }
+        function resetTimeline() {
+            timelineCurrentClick = 0;
+            document.querySelectorAll('.timeline-item').forEach(el => {
+                el.classList.remove('selected');
+                const num = el.querySelector('.timeline-number');
+                if (num) num.innerText = '';
+            });
+            const hub = document.getElementById('timeline-hub');
+            if (hub) hub.classList.add('hidden');
+        }
+
+        function checkOddOneOut(btn, isCorrect) {
+            if(isCorrect) {
+                btn.classList.add('border-vintage-orange', 'text-vintage-orange');
+                const hub = document.getElementById('odd-hub');
+                if (hub) hub.classList.remove('hidden');
+            } else {
+                btn.classList.add('border-red-500', 'text-red-500', 'shake');
+                setTimeout(() => btn.classList.remove('border-red-500', 'text-red-500', 'shake'), 400);
+            }
+        }
+
+        function checkRapid(btn, questionNum, isCorrect) {
+            const currentCard = document.getElementById(`rapid-q${questionNum}`);
+            if(isCorrect) {
+                btn.classList.replace('bg-[#282828]', 'bg-vintage-orange');
+                btn.classList.add('text-black');
+                setTimeout(() => {
+                    if (currentCard) currentCard.classList.add('hidden-card');
+                    if(questionNum < 3) { 
+                        const nextCard = document.getElementById(`rapid-q${questionNum + 1}`);
+                        if (nextCard) nextCard.classList.remove('hidden-card'); 
+                    } else { 
+                        const hub = document.getElementById('rapid-hub');
+                        if (hub) hub.classList.remove('hidden'); 
+                        shootConfetti(); 
+                    }
+                }, 500);
+            } else {
+                btn.classList.replace('bg-[#282828]', 'bg-red-500');
+                if (currentCard) currentCard.classList.add('shake', 'border', 'border-red-500');
+                setTimeout(() => {
+                    btn.classList.replace('bg-red-500', 'bg-[#282828]');
+                    if (currentCard) currentCard.classList.remove('shake', 'border', 'border-red-500');
+                }, 800);
+            }
+        }
+
+        let selA = null, selB = null;
+        let rhymeMatches = 0;
+        function selectRhyme(btn) {
+            if(btn.classList.contains('matched')) return;
+            const side = btn.getAttribute('data-side');
+            if(side === 'a') { if(selA) selA.classList.remove('selected'); selA = btn; } 
+            else { if(selB) selB.classList.remove('selected'); selB = btn; }
+            btn.classList.add('selected');
+
+            if(selA && selB) {
+                if(selA.getAttribute('data-id') === selB.getAttribute('data-id')) {
+                    selA.classList.replace('selected', 'matched'); 
+                    selB.classList.replace('selected', 'matched');
+                    selA = selB = null; 
+                    rhymeMatches++;
+                    if(rhymeMatches === 4) {
+                        const hub = document.getElementById('rhyme-hub');
+                        if (hub) hub.classList.remove('hidden');
+                    }
+                } else {
+                    selA.classList.add('shake', 'border-red-500'); 
+                    selB.classList.add('shake', 'border-red-500');
+                    setTimeout(() => {
+                        selA.classList.remove('shake', 'border-red-500', 'selected');
+                        selB.classList.remove('shake', 'border-red-500', 'selected');
+                        selA = selB = null;
+                    }, 400);
+                }
+            }
+        }
+
+        let currentBlankTarget = 1;
+        const expectedMissing = { 1: 'know', 2: 'ever', 3: 'day' };
+        function fillMissingWord(btn, word) {
+            if(currentBlankTarget > 3) return;
+            if(word === expectedMissing[currentBlankTarget]) {
+                const blank = document.getElementById(`blank-${currentBlankTarget}`);
+                if (blank) {
+                    blank.innerText = word.toUpperCase();
+                    blank.classList.replace('text-gray-500', 'text-vintage-orange');
+                    blank.classList.replace('border-gray-500', 'border-vintage-orange');
+                }
+                btn.classList.add('bg-vintage-orange', 'text-black', 'border-vintage-orange', 'opacity-50', 'pointer-events-none');
+                currentBlankTarget++;
+                if(currentBlankTarget > 3) {
+                    const hub = document.getElementById('missing-hub');
+                    if (hub) hub.classList.remove('hidden');
+                }
+            } else {
+                btn.classList.add('shake', 'bg-red-500');
+                setTimeout(() => btn.classList.remove('shake', 'bg-red-500'), 400);
+            }
+        }
+        function resetMissing() {
+            currentBlankTarget = 1;
+            document.querySelectorAll('[id^="blank-"]').forEach((b, index) => {
+                b.innerText = index + 1;
+                b.classList.replace('text-vintage-orange', 'text-gray-500');
+                b.classList.replace('border-vintage-orange', 'border-gray-500');
+            });
+            document.querySelectorAll('.missing-btn').forEach(btn => {
+                btn.classList.remove('bg-vintage-orange', 'text-black', 'border-vintage-orange', 'opacity-50', 'pointer-events-none');
+            });
+            const hub = document.getElementById('missing-hub');
+            if (hub) hub.classList.add('hidden');
+        }
+
+        function rateSong(btn, stars) {
+            const allStars = document.querySelectorAll('.star-btn');
+            allStars.forEach((star, index) => {
+                if(index < stars) {
+                    star.classList.remove('opacity-30', 'grayscale');
+                    star.classList.add('opacity-100', 'drop-shadow-[0_0_15px_rgba(249,115,22,0.8)]');
+                } else {
+                    star.classList.add('opacity-30', 'grayscale');
+                    star.classList.remove('opacity-100', 'drop-shadow-[0_0_15px_rgba(249,115,22,0.8)]');
+                }
+            });
+            const st = document.getElementById('star-count');
+            if (st) st.innerText = stars;
+            const rh = document.getElementById('review-hub');
+            if (rh) rh.classList.remove('hidden');
+        }
+
+        function triggerPraise(mainText, subText) {
+            const panel = document.getElementById('whiteboardPanel');
+            if(panel && !panel.classList.contains('translate-x-full')) {
+                panel.classList.add('translate-x-full');
+            }
+            
+            const overlay = document.getElementById('praise-overlay');
+            const card = document.getElementById('praise-card');
+            
+            const pMain = document.getElementById('praise-main');
+            const pSub = document.getElementById('praise-sub');
+            if (pMain) pMain.innerText = mainText;
+            if (pSub) pSub.innerText = subText;
+            
+            if(overlay && card) {
+                overlay.classList.remove('opacity-0', 'pointer-events-none');
+                overlay.classList.add('opacity-100');
+                card.classList.replace('scale-50', 'scale-110');
+                
+                shootConfetti();
+                
+                setTimeout(() => {
+                    card.classList.replace('scale-110', 'scale-50');
+                    overlay.classList.remove('opacity-100');
+                    overlay.classList.add('opacity-0', 'pointer-events-none');
+                }, 2500); 
+            }
+        }
+
+        function shootConfetti() {
+            const cols = ['#f97316', '#FFFFFF', '#0ea5e9'];
+            for(let i=0; i<100; i++) { 
+                let c = document.createElement('div');
+                c.className = 'confetti rounded-sm'; c.style.left = Math.random()*100+'vw';
+                c.style.backgroundColor = cols[Math.floor(Math.random()*cols.length)];
+                c.style.animation = `fall ${Math.random()*3+2}s linear forwards`;
+                c.style.animationDelay = Math.random()*1+'s';
+                document.body.appendChild(c);
+                setTimeout(()=>c.remove(), 6000);
+            }
+        }
+
+        function clearNotepad() { 
+            const tn = document.getElementById('teacher-notepad');
+            if(tn) tn.value = ''; 
+        }
+        function copyNotepad() {
+            const text = document.getElementById('teacher-notepad');
+            if(text) {
+                text.select(); document.execCommand('copy');
+            }
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
